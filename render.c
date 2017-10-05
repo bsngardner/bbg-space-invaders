@@ -31,8 +31,6 @@ static u32* frame1 = ((u32*) FRAME_BUFFER_0_ADDR) + SCREEN_H * SCREEN_W;
 #define min(x,y) (((x)<(y))?(x):(y))
 #define max(x,y) (((x)>(y))?(x):(y))
 
-static u8 frameIndex = 0;
-
 //Static function prototypes
 static void draw_bitmap(const u32* bmp, u32 color, s16 bmp_x, s16 bmp_y,
 		s16 bmp_w, s16 bmp_h);
@@ -163,11 +161,8 @@ static void update_alien_block(alien_block_t* alien_block) {
 				bmp_aliens[alien_block->legs][4], 4);
 
 	} else if (alien_block->pos.y != prev_block.pos.y) {
-		xil_printf("Vert!: prev (%d,%d) new (%d,%d)\n\r", prev_block.pos.x,
-				prev_block.pos.y, alien_block->pos.x, alien_block->pos.y);
 		//Iterate through rows.
-		u16 row;
-		u16 prev_row;
+
 		u16 x = prev_block.pos.x;
 		u16 n = ALIENS_ROW_LEN;
 		for (; n-- > 0;) {
@@ -280,43 +275,3 @@ static void draw_bitmap(const u32* bmp, u32 color, s16 bmp_x, s16 bmp_y,
 		}
 	}
 }
-
-#if 0
-static void draw_bunker(s16 bunker_x, s16 bunker_y) {
-	if (bunker_x < 0 || bunker_y < 0) {
-		//undraw bunker?
-	}
-	const u32* bunker_bmp = bitmaps_getBunkerBMP();
-	bunker_x += BMP_BUNKER_WIDTH;
-	u32 bunker_row;
-	s16 y;
-	for (y = 0; y < BMP_BUNKER_HEIGHT; y++) {
-		bunker_row = bunker_bmp[y];
-		s16 x = bunker_x;
-		for (; bunker_row; bunker_row >>= 1) {
-			if (bunker_row & BIT0) {
-				set_point(x, y + bunker_y, COLOR_GREEN);
-			} else {
-			}
-			x--;
-		}
-	}
-}
-static void draw_tank(s16 tank_x, s16 tank_y) {
-	const u32* const tank_bmp = bitmaps_getTankBMP();
-	tank_x += BMP_TANK_WIDTH;
-	u32 tank_row;
-	s16 y;
-	for (y = 0; y < BMP_TANK_HEIGHT; y++) {
-		tank_row = tank_bmp[y];
-		s16 x = tank_x;
-		for (; tank_row; tank_row >>= 1) {
-			if (tank_row & BIT0) {
-				set_point(x, y + tank_y, COLOR_GREEN);
-			} else {
-			}
-			x--;
-		}
-	}
-}
-#endif
