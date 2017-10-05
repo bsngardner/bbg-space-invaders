@@ -8,8 +8,6 @@
 #ifndef GAME_H_
 #define GAME_H_
 
-#include "render.h"
-
 typedef struct {
 	s16 x;
 	s16 y;

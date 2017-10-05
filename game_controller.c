@@ -18,24 +18,36 @@ u8 alien_missile_flag[MISSILES];
 point_t tank_pos;
 point_t tank_bullet_pos;
 u8 tank_bullet_flag;
+alien_block_t block;
 point_t alien_block_pos;
 
 void game_controller_init(void) {
 
-	//initialize the alien life/death array
-	init_array();
+
 	//initialize the x tank position to the middle of the screen
 	tank_pos.x = TANK_X;
 	//initialize the y tank position to the bottom of the screen
 	tank_pos.y = TANK_Y;
 	xil_printf("\r\nTANK POSITION %d %d\r\n", tank_pos.x, tank_pos.y);
 
-	//initialize the x alien position to the middle of the screen
-	alien_block_pos.x = ALIEN_X;
-	//initialize the y alien position to the middle of the screen
-	alien_block_pos.y = ALIEN_Y;
-	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", alien_block_pos.x,
-			alien_block_pos.y);
+	u32 init_timer = ALIEN_INIT;
+	block.pos.x = ALIEN_XY;
+	block.pos.y = ALIEN_XY;
+	block.legs = OUT;
+	//initialize the alien life/death array
+	memset(block.alien_status, 1, ALIENS);
+	render(&tank_pos, 0, &block, 0, 0);
+	u8 i = 0;
+	for (i; i < INITIAL_MOVES; i++) {
+		while (init_timer)
+			init_timer--; // Decrement the timer.
+		init_timer = ALIEN_INIT; // Reset the timer.
+		block.pos.x += MOVE_SPRITE;
+		render(&tank_pos, 0, &block, 0, 0);
+	}
+
+	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", block.pos.x,
+			block.pos.y);
 
 	//initialize the bunker states to full health
 	init_bunker_states();
@@ -97,13 +109,9 @@ void game_controller_run(void) {
 		xil_printf("Invalid input (%c)\r\n", input);
 		break;
 	}
+	render(&tank_pos, 0, &block, 0, 0);
 }
 
-void init_array(void) {
-	u8 i;
-	for (i = 0; i < ALIENS; i++)
-		alien_life[i] = 1;
-}
 
 void init_bunker_states(void) {
 	u8 i;
@@ -123,32 +131,38 @@ direction alien_direction = LEFT;
 void move_tank(direction d) {
 	if (d == LEFT) {
 		if (tank_pos.x >= MOVE_SPRITE)
-			tank_pos.x = tank_pos.x - MOVE_SPRITE;
+			tank_pos.x -= MOVE_SPRITE;
 	} else if (d == RIGHT) {
 		if (tank_pos.x <= GAME_WIDTH + MOVE_SPRITE)
-			tank_pos.x = tank_pos.x + MOVE_SPRITE;
+			tank_pos.x += MOVE_SPRITE;
 	}
 	xil_printf("TANK POSITION %d %d\r\n", tank_pos.x, tank_pos.y);
 }
 void update_alien_position(void) {
+
 	if (alien_direction == LEFT) {
-		if (alien_block_pos.x >= MOVE_SPRITE) {
-			alien_block_pos.x = alien_block_pos.x - MOVE_SPRITE;
+		if (block.pos.x >= MOVE_SPRITE) {
+			block.pos.x -= MOVE_SPRITE;
 		} else {
-			alien_block_pos.y = alien_block_pos.y + MOVE_SPRITE;
+			block.pos.y += MOVE_SPRITE;
 			alien_direction = RIGHT;
 		}
 
 	} else if (alien_direction == RIGHT) {
-		if (alien_block_pos.x <= GAME_WIDTH) {
-			alien_block_pos.x = alien_block_pos.x + MOVE_SPRITE;
+		if (block.pos.x < RIGHT_WALL) {
+			block.pos.x += MOVE_SPRITE;
 		} else {
-			alien_block_pos.y = alien_block_pos.y + MOVE_SPRITE;
+			block.pos.y += MOVE_SPRITE;
 			alien_direction = LEFT;
 		}
 	}
-	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", alien_block_pos.x,
-			alien_block_pos.y);
+	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", block.pos.x,
+			block.pos.y);
+
+	if (block.legs == OUT)
+		block.legs = IN;
+	else
+		block.legs = OUT;
 }
 
 void print_array(void) {
