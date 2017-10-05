@@ -28,7 +28,7 @@ typedef struct alien_block {
 	point_t pos;
 	u8 alien_status[ALIEN_COUNT];
 	enum {
-		OUT, IN
+		OUT = 0, IN = 1
 	} legs;
 } alien_block_t;
 

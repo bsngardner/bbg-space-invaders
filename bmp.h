@@ -24,6 +24,10 @@
 //Externs
 
 // Must define packword for each of the different bit-widths.
+extern const u32* bmp_aliens_out[];
+extern const u32* bmp_aliens_in[];
+extern const u32** bmp_aliens[];
+
 extern const u32 bmp_saucer_16x7[];
 extern const u32 bmp_alien_explosion_12x10[];
 extern const u32 bmp_alien_top_in_12x8[];
@@ -33,6 +37,7 @@ extern const u32 bmp_alien_middle_out_12x8[];
 extern const u32 bmp_alien_bottom_in_12x8[];
 extern const u32 bmp_alien_bottom_out_12x8[];
 extern const u32 bmp_alien_empty[];
+
 extern const u32 bmp_tank_15x8[];
 
 // Shape of the entire bunker.

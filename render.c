@@ -180,6 +180,21 @@ static void update_alien_block(alien_block_t* alien_block) {
 		update_alien_row(alien_block, &prev_block, prev_alien, new_alien, 4);
 
 	} else if (alien_block->pos.y != prev_block.pos.y) {
+		//Iterate through rows.
+#define ALIENS_ROWS_TO_UPDATE (ALIENS_ROW_COUNT+1)
+		u16 row;
+		u16 prev_row;
+		for (row = 0; row < ALIENS_ROWS_TO_UPDATE; row++) {
+			prev_row = (row + 1) % ALIENS_ROWS_TO_UPDATE;
+			new_alien = bmp_aliens[alien_block->legs][row];
+			prev_alien = bmp_aliens[prev_block.legs][prev_row];
+
+			if (new_alien == prev_alien)
+				continue;
+			update_alien_row(alien_block, &prev_block, prev_alien, new_alien,
+					row);
+
+		}
 
 	} else {
 		//blocks are the same
