@@ -23,7 +23,6 @@ point_t alien_block_pos;
 
 void game_controller_init(void) {
 
-
 	//initialize the x tank position to the middle of the screen
 	tank_pos.x = TANK_X;
 	//initialize the y tank position to the bottom of the screen
@@ -46,8 +45,7 @@ void game_controller_init(void) {
 		render(&tank_pos, 0, &block, 0, 0);
 	}
 
-	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", block.pos.x,
-			block.pos.y);
+	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", block.pos.x, block.pos.y);
 
 	//initialize the bunker states to full health
 	init_bunker_states();
@@ -112,7 +110,6 @@ void game_controller_run(void) {
 	render(&tank_pos, 0, &block, 0, 0);
 }
 
-
 void init_bunker_states(void) {
 	u8 i;
 	for (i = 0; i < BUNKERS; i++)
@@ -126,7 +123,7 @@ void print_bunkers(void) {
 	xil_printf("\r\n");
 }
 
-direction alien_direction = LEFT;
+direction alien_direction = RIGHT;
 
 void move_tank(direction d) {
 	if (d == LEFT) {
@@ -156,8 +153,7 @@ void update_alien_position(void) {
 			alien_direction = LEFT;
 		}
 	}
-	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", block.pos.x,
-			block.pos.y);
+	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", block.pos.x, block.pos.y);
 
 	if (block.legs == OUT)
 		block.legs = IN;

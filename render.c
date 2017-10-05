@@ -77,9 +77,16 @@ void render_init() {
 #define ALIENS_START 0
 #define ALIENS_END 10
 #define ALIENS_ROW_COUNT 5
+#define ALIENS_ROWS_TO_UPDATE (ALIENS_ROW_COUNT)
 #define ALIENS_MAX_Y ALIENS_SEPY* ALIENS_ROW_COUNT
 #define ALIENS_ROW_LEN 11
 #define ALIEN_COLOR 0x00FFFFFF
+#define ALIENS_ROW0 0
+#define ALIENS_ROW1 1
+#define ALIENS_ROW2 2
+#define ALIENS_ROW3 3
+#define ALIENS_ROW4 4
+#define ALIENS_ROW5 5
 
 static void update_alien_row(alien_block_t* alien_block,
 		alien_block_t* prev_block, const u32* prev_alien, const u32* new_alien,
@@ -134,106 +141,102 @@ static void update_alien_block(alien_block_t* alien_block) {
 	static alien_block_t prev_block = { { -1, -1 }, { 0 } };
 	if (prev_block.pos.x < 0) {
 		prev_block.pos.x = alien_block->pos.x - 1;
-		prev_block.pos.x = alien_block->pos.y;
+		prev_block.pos.y = alien_block->pos.y;
 	}
 
-	const u32* new_alien;
-	const u32* prev_alien;
 	if (alien_block->pos.x != prev_block.pos.x) {
-		if (alien_block->legs == OUT) {
-			new_alien = bmp_alien_top_out_12x8;
-		} else {
-			new_alien = bmp_alien_top_in_12x8;
-		}
-		//		if (prev_block.pos.y < 0) {
-		//			prev_alien = bmp_alien_empty;
-		//		} else
-		if (prev_block.legs == OUT) {
-			prev_alien = bmp_alien_top_out_12x8;
-		} else {
-			prev_alien = bmp_alien_top_in_12x8;
-		}
 
-		update_alien_row(alien_block, &prev_block, prev_alien, new_alien, 0);
-
-		if (alien_block->legs == OUT) {
-			new_alien = bmp_alien_middle_out_12x8;
-		} else {
-			new_alien = bmp_alien_middle_in_12x8;
-		}
-		if (prev_block.legs == OUT) {
-			prev_alien = bmp_alien_middle_out_12x8;
-		} else {
-			prev_alien = bmp_alien_middle_in_12x8;
-		}
-
-		update_alien_row(alien_block, &prev_block, prev_alien, new_alien, 1);
-		update_alien_row(alien_block, &prev_block, prev_alien, new_alien, 2);
-
-		if (alien_block->legs == OUT) {
-			new_alien = bmp_alien_bottom_out_12x8;
-		} else {
-			new_alien = bmp_alien_bottom_in_12x8;
-		}
-		if (prev_block.legs == OUT) {
-			prev_alien = bmp_alien_bottom_out_12x8;
-		} else {
-			prev_alien = bmp_alien_bottom_in_12x8;
-		}
-
-		update_alien_row(alien_block, &prev_block, prev_alien, new_alien, 3);
-		update_alien_row(alien_block, &prev_block, prev_alien, new_alien, 4);
+		update_alien_row(alien_block, &prev_block,
+				bmp_aliens[prev_block.legs][0],
+				bmp_aliens[alien_block->legs][0], 0);
+		update_alien_row(alien_block, &prev_block,
+				bmp_aliens[prev_block.legs][1],
+				bmp_aliens[alien_block->legs][1], 1);
+		update_alien_row(alien_block, &prev_block,
+				bmp_aliens[prev_block.legs][2],
+				bmp_aliens[alien_block->legs][2], 2);
+		update_alien_row(alien_block, &prev_block,
+				bmp_aliens[prev_block.legs][3],
+				bmp_aliens[alien_block->legs][3], 3);
+		update_alien_row(alien_block, &prev_block,
+				bmp_aliens[prev_block.legs][4],
+				bmp_aliens[alien_block->legs][4], 4);
 
 	} else if (alien_block->pos.y != prev_block.pos.y) {
+		xil_printf("Vert!: prev (%d,%d) new (%d,%d)\n\r", prev_block.pos.x,
+				prev_block.pos.y, alien_block->pos.x, alien_block->pos.y);
 		//Iterate through rows.
-		u32 delta;
-		u32 set_delta;
-		u32 reset_delta;
-		s16 py = prev_block.pos.y;
-		s16 ny = alien_block->pos.y;
-		u32 pr, nr;
-		u16 y;
-		u16 maxy;
-		if (py < ny) {
-			y = py;
-			maxy = ny + ALIENS_MAX_Y;
-		} else {
-			y = ny;
-			maxy = py + ALIENS_MAX_Y;
-		}
-		for (; y < maxy; y++) {
-			py = y - py;
-			ny = y - ny;
-
-			pr
-					= bmp_aliens[prev_block.legs][((py >= 0) && (py
-							< ALIENS_MAX_Y)) ? (py / 16) : 5][py % 5];
-			nr
-					= bmp_aliens[prev_block.legs][((ny >= 0) && (ny
-							< ALIENS_MAX_Y)) ? (ny / 16) : 5][ny % 5];
-			delta = pr ^ nr;
-			set_delta = delta & ~pr;
-			reset_delta = delta & pr;
-			u16 x = 0;
-			while (x < BMP_ALIEN_W) {
-				u16 n;
-				u16 pn = py / 16 * 11;
-				u16 nn = ny / 16 * 11;
-				for (n = 0; n < 11; n++) { //TODO REPLACE MAGIC NUMBER
-					if (set_delta & BIT0 || prev_block.alien_status[pn + n]) {
-						set_point(x, y, ALIEN_COLOR);
-					}
-					if (reset_delta & BIT0 || alien_block->alien_status[nn + n]) {
-						clr_point (x,y);
-					}
-
-					nn++;
-					pn++;
-				}
-				reset_delta >>= 1;
-				set_delta >>= 1;
-				x++;
+		u16 row;
+		u16 prev_row;
+		u16 x = prev_block.pos.x;
+		u16 n = ALIENS_ROW_LEN;
+		for (; n-- > 0;) {
+			if (prev_block.alien_status[n]) {
+				draw_bitmap(bmp_aliens[prev_block.legs][ALIENS_ROW0],
+						GAME_BACKGROUND, x,
+						prev_block.pos.y + ALIENS_ROW0 * ALIENS_SEPY,
+						BMP_ALIEN_W, BMP_ALIEN_H);
 			}
+			//Row 1
+			if (prev_block.alien_status[n]) {
+				draw_bitmap(bmp_aliens[prev_block.legs][ALIENS_ROW1],
+						GAME_BACKGROUND, x,
+						prev_block.pos.y + ALIENS_ROW1 * ALIENS_SEPY,
+						BMP_ALIEN_W, BMP_ALIEN_H);
+			}
+			if (alien_block->alien_status[n]) {
+				draw_bitmap(bmp_aliens[alien_block->legs][ALIENS_ROW0],
+						ALIEN_COLOR, x,
+						alien_block->pos.y + ALIENS_ROW0 * ALIENS_SEPY,
+						BMP_ALIEN_W, BMP_ALIEN_H);
+			}
+			//Row 2
+			if (prev_block.alien_status[n]) {
+				draw_bitmap(bmp_aliens[prev_block.legs][ALIENS_ROW2],
+						GAME_BACKGROUND, x,
+						prev_block.pos.y + ALIENS_ROW2 * ALIENS_SEPY,
+						BMP_ALIEN_W, BMP_ALIEN_H);
+			}
+			if (alien_block->alien_status[n]) {
+				draw_bitmap(bmp_aliens[alien_block->legs][ALIENS_ROW1],
+						ALIEN_COLOR, x,
+						alien_block->pos.y + ALIENS_ROW1 * ALIENS_SEPY,
+						BMP_ALIEN_W, BMP_ALIEN_H);
+			}
+			//Row 3
+			if (prev_block.alien_status[n]) {
+				draw_bitmap(bmp_aliens[prev_block.legs][ALIENS_ROW3],
+						GAME_BACKGROUND, x,
+						prev_block.pos.y + ALIENS_ROW3 * ALIENS_SEPY,
+						BMP_ALIEN_W, BMP_ALIEN_H);
+			}
+			if (alien_block->alien_status[n]) {
+				draw_bitmap(bmp_aliens[alien_block->legs][ALIENS_ROW2],
+						ALIEN_COLOR, x,
+						alien_block->pos.y + ALIENS_ROW2 * ALIENS_SEPY,
+						BMP_ALIEN_W, BMP_ALIEN_H);
+			}
+			//Row 4
+			if (prev_block.alien_status[n]) {
+				draw_bitmap(bmp_aliens[prev_block.legs][ALIENS_ROW4],
+						GAME_BACKGROUND, x,
+						prev_block.pos.y + ALIENS_ROW4 * ALIENS_SEPY,
+						BMP_ALIEN_W, BMP_ALIEN_H);
+			}
+			if (alien_block->alien_status[n]) {
+				draw_bitmap(bmp_aliens[alien_block->legs][ALIENS_ROW3],
+						ALIEN_COLOR, x,
+						alien_block->pos.y + ALIENS_ROW3 * ALIENS_SEPY,
+						BMP_ALIEN_W, BMP_ALIEN_H);
+			}
+			//Row 5
+			if (alien_block->alien_status[n]) {
+				draw_bitmap(bmp_aliens[alien_block->legs][ALIENS_ROW4],
+						ALIEN_COLOR, x,
+						alien_block->pos.y + ALIENS_ROW4 * ALIENS_SEPY,
+						BMP_ALIEN_W, BMP_ALIEN_H);
+			}
+			x += ALIENS_SEPX;
 		}
 
 	} else {
@@ -263,7 +266,6 @@ static inline void set_point(s32 x, s32 y, u32 color) {
 
 static void draw_bitmap(const u32* bmp, u32 color, s16 bmp_x, s16 bmp_y,
 		s16 bmp_w, s16 bmp_h) {
-	bmp_x += bmp_w;
 	u32 bmp_row;
 	s16 y;
 	for (y = 0; y < bmp_h; y++) {
@@ -274,7 +276,7 @@ static void draw_bitmap(const u32* bmp, u32 color, s16 bmp_x, s16 bmp_y,
 				set_point(x, y + bmp_y, color);
 			} else {
 			}
-			x--;
+			x++;
 		}
 	}
 }
