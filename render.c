@@ -27,6 +27,10 @@
 static u32* frame0 = (u32*) FRAME_BUFFER_0_ADDR;
 static u32* frame1 = ((u32*) FRAME_BUFFER_0_ADDR) + SCREEN_H * SCREEN_W;
 
+//macros
+#define min(x,y) (((x)<(y))?(x):(y))
+#define max(x,y) (((x)>(y))?(x):(y))
+
 static u8 frameIndex = 0;
 
 //Static function prototypes
@@ -73,6 +77,7 @@ void render_init() {
 #define ALIENS_START 0
 #define ALIENS_END 10
 #define ALIENS_ROW_COUNT 5
+#define ALIENS_MAX_Y ALIENS_SEPY* ALIENS_ROW_COUNT
 #define ALIENS_ROW_LEN 11
 #define ALIEN_COLOR 0x00FFFFFF
 
@@ -180,6 +185,56 @@ static void update_alien_block(alien_block_t* alien_block) {
 		update_alien_row(alien_block, &prev_block, prev_alien, new_alien, 4);
 
 	} else if (alien_block->pos.y != prev_block.pos.y) {
+		//Iterate through rows.
+		u32 delta;
+		u32 set_delta;
+		u32 reset_delta;
+		s16 py = prev_block.pos.y;
+		s16 ny = alien_block->pos.y;
+		u32 pr, nr;
+		u16 y;
+		u16 maxy;
+		if (py < ny) {
+			y = py;
+			maxy = ny + ALIENS_MAX_Y;
+		} else {
+			y = ny;
+			maxy = py + ALIENS_MAX_Y;
+		}
+		for (; y < maxy; y++) {
+			py = y - py;
+			ny = y - ny;
+
+			pr
+					= bmp_aliens[prev_block.legs][((py >= 0) && (py
+							< ALIENS_MAX_Y)) ? (py / 16) : 5][py % 5];
+			nr
+					= bmp_aliens[prev_block.legs][((ny >= 0) && (ny
+							< ALIENS_MAX_Y)) ? (ny / 16) : 5][ny % 5];
+			delta = pr ^ nr;
+			set_delta = delta & ~pr;
+			reset_delta = delta & pr;
+			u16 x = 0;
+			while (x < BMP_ALIEN_W) {
+				u16 n;
+				u16 pn = py / 16 * 11;
+				u16 nn = ny / 16 * 11;
+				for (n = 0; n < 11; n++) { //TODO REPLACE MAGIC NUMBER
+					if (set_delta & BIT0 || prev_block.alien_status[pn + n]) {
+						set_point(x, y, ALIEN_COLOR);
+					}
+					if (reset_delta & BIT0 || alien_block->alien_status[nn + n]) {
+						clr_point (x,y);
+					}
+
+					nn++;
+					pn++;
+				}
+				reset_delta >>= 1;
+				set_delta >>= 1;
+				x++;
+			}
+		}
 
 	} else {
 		//blocks are the same

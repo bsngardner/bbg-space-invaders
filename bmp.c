@@ -113,6 +113,15 @@ const u32 bmp_alien_bottom_out_12x8[] = { packword12(0, 0, 0, 0, 1, 1,
 
 const u32 bmp_alien_empty[8] = { 0 };
 
+const u32* bmp_aliens_out[] = { bmp_alien_empty, bmp_alien_top_out_12x8,
+		bmp_alien_middle_out_12x8, bmp_alien_middle_out_12x8,
+		bmp_alien_bottom_out_12x8, bmp_alien_bottom_out_12x8 };
+const u32* bmp_aliens_in[] = { bmp_alien_empty, bmp_alien_top_in_12x8,
+		bmp_alien_middle_in_12x8, bmp_alien_middle_in_12x8,
+		bmp_alien_bottom_in_12x8, bmp_alien_bottom_in_12x8 };
+
+const u32** bmp_aliens[] = { bmp_aliens_out, bmp_aliens_in };
+
 const u32 bmp_tank_15x8[] = { packword15(0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
 		0, 0, 0, 0, 0),
 		packword15(0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0), packword15(0,

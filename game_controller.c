@@ -25,6 +25,7 @@ void game_controller_init(void) {
 
 	//initialize the bunker states to full health
 	init_bunker_states();
+
 	//initialize the x tank position to the middle of the screen
 	tank_pos.x = TANK_X;
 	//initialize the y tank position to the bottom of the screen
@@ -38,6 +39,12 @@ void game_controller_init(void) {
 	//initialize the alien life/death array
 	memset(block.alien_status, 1, ALIENS);
 	render(&tank_pos, &tank_bullet_pos, tank_bullet_flag, &block, &alien_missiles, alien_missile_flag, bunker_states);
+	block.pos.x = ALIEN_XY;
+	block.pos.y = ALIEN_XY;
+	block.legs = OUT;
+	//initialize the alien life/death array
+	memset(block.alien_status, 1, ALIENS);
+
 	u8 i = 0;
 	for (i; i < INITIAL_MOVES; i++) {
 		while (init_timer)
@@ -46,6 +53,7 @@ void game_controller_init(void) {
 		block.pos.x += MOVE_SPRITE;
 		render(&tank_pos, &tank_bullet_pos, tank_bullet_flag, &block, &alien_missiles, alien_missile_flag, bunker_states);
 	}
+
 
 	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", block.pos.x, block.pos.y);
 	//no tank flag yet
@@ -109,6 +117,7 @@ void game_controller_run(void) {
 	render(&tank_pos, &tank_bullet_pos, tank_bullet_flag, &block, &alien_missiles, alien_missile_flag, bunker_states);
 }
 
+
 void init_bunker_states(void) {
 	u8 i;
 	for (i = 0; i < BUNKERS; i++)
@@ -152,7 +161,8 @@ void update_alien_position(void) {
 			alien_direction = LEFT;
 		}
 	}
-	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", block.pos.x, block.pos.y);
+	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", block.pos.x,
+			block.pos.y);
 
 	if (block.legs == OUT)
 		block.legs = IN;

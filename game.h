@@ -8,7 +8,6 @@
 #ifndef GAME_H_
 #define GAME_H_
 
-
 typedef struct {
 	s16 x;
 	s16 y;
@@ -27,7 +26,7 @@ typedef struct alien_block {
 	point_t pos;
 	u8 alien_status[ALIEN_COUNT];
 	enum {
-		OUT, IN
+		OUT = 0, IN = 1
 	} legs;
 } alien_block_t;
 

@@ -36,6 +36,7 @@
 #define BUNKERS 4
 #define BUNKER_MAX 4
 
+
 #define MOVE_SPRITE 2
 
 #define BUFFER 20
@@ -54,9 +55,7 @@
 #define KEY_9 '9'
 #define to_digit(c) (c-'0')
 
-typedef enum {
-	LEFT, RIGHT
-} direction;
+typedef enum {LEFT, RIGHT} direction;
 
 #include "xil_types.h"
 #include "game.h"
