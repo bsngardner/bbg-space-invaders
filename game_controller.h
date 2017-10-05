@@ -7,29 +7,34 @@
 
 #ifndef GAME_CONTROLLER_H_
 #define GAME_CONTROLLER_H_
+
+#include "bmp.h"
+
 #define ALIENS 55
 #define SCREEN_HEIGHT 480
 #define SCREEN_WIDTH 640
 #define GAME_HEIGHT (SCREEN_HEIGHT/2)
 #define GAME_WIDTH (SCREEN_WIDTH/2)
 
-#define TANK_X (GAME_WIDTH/2)
+#define TANK_X (GAME_WIDTH/2 - BMP_TANK_W/2)
 #define TANK_Y GAME_HEIGHT*7/8
-#define TANK_BULL_Y 10
-#define	TANK_BULL_X 8
+#define TANK_BULL_Y 5
+#define	TANK_BULL_X (19/2)-1
 
-#define ALIEN_XY 5
+#define ALIEN_X GAME_WIDTH/2 - 70
+#define ALIEN_Y GAME_HEIGHT/4
 #define	ALIEN_COLS 11
 #define BOT_LEFT_ALIEN 44
-#define ALIEN_WIDTH 8
-#define ALIEN_MID 4
+#define ALIEN_WIDTH 18
+#define ALIEN_MID 8
 #define MISSILES 4
 #define ALIEN_INIT 100000;
 #define RIGHT_WALL 123
 #define INITIAL_MOVES 6
+#define BLOCK_H 72
 
 #define BUNKERS 4
-#define BUNKER_MAX 5
+#define BUNKER_MAX 4
 
 
 #define MOVE_SPRITE 2

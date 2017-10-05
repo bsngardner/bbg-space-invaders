@@ -23,6 +23,9 @@ point_t alien_block_pos;
 
 void game_controller_init(void) {
 
+	//initialize the bunker states to full health
+	init_bunker_states();
+
 	//initialize the x tank position to the middle of the screen
 	tank_pos.x = TANK_X;
 	//initialize the y tank position to the bottom of the screen
@@ -30,25 +33,29 @@ void game_controller_init(void) {
 	xil_printf("\r\nTANK POSITION %d %d\r\n", tank_pos.x, tank_pos.y);
 
 	u32 init_timer = ALIEN_INIT;
-	block.pos.x = ALIEN_XY;
-	block.pos.y = ALIEN_XY;
+	block.pos.x = ALIEN_X;
+	block.pos.y = ALIEN_Y;
 	block.legs = OUT;
 	//initialize the alien life/death array
 	memset(block.alien_status, 1, ALIENS);
-	render(&tank_pos, 0, &block, 0, 0);
+	render(&tank_pos, &tank_bullet_pos, tank_bullet_flag, &block,
+			&alien_missiles, alien_missile_flag, bunker_states);
+
+	block.legs = OUT;
+	//initialize the alien life/death array
+	memset(block.alien_status, 1, ALIENS);
+
 	u8 i = 0;
 	for (i; i < INITIAL_MOVES; i++) {
 		while (init_timer)
 			init_timer--; // Decrement the timer.
 		init_timer = ALIEN_INIT; // Reset the timer.
 		block.pos.x += MOVE_SPRITE;
-		render(&tank_pos, 0, &block, 0, 0);
+		render(&tank_pos, &tank_bullet_pos, tank_bullet_flag, &block,
+				&alien_missiles, alien_missile_flag, bunker_states);
 	}
 
 	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", block.pos.x, block.pos.y);
-
-	//initialize the bunker states to full health
-	init_bunker_states();
 	//no tank flag yet
 	tank_bullet_flag = 0;
 	//random seed
@@ -107,7 +114,8 @@ void game_controller_run(void) {
 		xil_printf("Invalid input (%c)\r\n", input);
 		break;
 	}
-	render(&tank_pos, 0, &block, 0, 0);
+	render(&tank_pos, &tank_bullet_pos, tank_bullet_flag, &block,
+			&alien_missiles, alien_missile_flag, bunker_states);
 }
 
 void init_bunker_states(void) {
@@ -130,7 +138,7 @@ void move_tank(direction d) {
 		if (tank_pos.x >= MOVE_SPRITE)
 			tank_pos.x -= MOVE_SPRITE;
 	} else if (d == RIGHT) {
-		if (tank_pos.x <= GAME_WIDTH + MOVE_SPRITE)
+		if (tank_pos.x <= GAME_WIDTH - BMP_TANK_W - MOVE_SPRITE)
 			tank_pos.x += MOVE_SPRITE;
 	}
 	xil_printf("TANK POSITION %d %d\r\n", tank_pos.x, tank_pos.y);
@@ -164,7 +172,7 @@ void update_alien_position(void) {
 void print_array(void) {
 	u8 i;
 	for (i = 0; i < ALIENS; i++)
-		xil_printf("%d", alien_life[i]);
+		xil_printf("%d", block.alien_status[i]);
 	xil_printf("\r\n");
 }
 
@@ -197,7 +205,7 @@ void kill_alien(void) {
 		xil_printf("INVALID NUMBER\r\n");
 		return;
 	}
-	alien_life[alien_no] = 0;
+	block.alien_status[alien_no] = 0;
 	print_array();
 }
 void fire_tank_bullet(void) {
@@ -227,12 +235,12 @@ void fire_alien_missile(void) {
 	u8 fired = 0;
 	while (!fired) {
 		alien_shooter = rand() % ALIEN_COLS + BOT_LEFT_ALIEN;
-		if (alien_life[alien_shooter])
+		if (block.alien_status[alien_shooter])
 			fired = 1;
 	}
-	alien_missiles[i].x = alien_block_pos.x + (alien_shooter % ALIEN_COLS)
-			* ALIEN_WIDTH + ALIEN_MID;
-	alien_missiles[i].y = alien_block_pos.y;
+	alien_missiles[i].x = block.pos.x + ((alien_shooter % ALIEN_COLS)
+			* ALIEN_WIDTH) + ALIEN_MID;
+	alien_missiles[i].y = block.pos.y + BLOCK_H;
 	alien_missiles[i].type = WEAK;
 
 	xil_printf("MISSILE %d FIRED AT %d %d\r\n", i, alien_missiles[i].x,

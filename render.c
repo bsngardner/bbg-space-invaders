@@ -240,13 +240,130 @@ static void update_alien_block(alien_block_t* alien_block) {
 	memcpy(&prev_block, alien_block, sizeof(alien_block_t));
 }
 
-void render(point_t* tankPos, point_t* tankBulletPos,
+static void update_tank(point_t* tank_block) {
+	static point_t prev_tank_block = { RENDER_TANK_X, RENDER_TANK_Y };
+	const u32* tank_bmp = bmp_tank_15x8;
+	u16 y = tank_block->y;
+	u16 tank_y;
+	for (tank_y = 0; tank_y < BMP_TANK_H; tank_y++) {
+		s16 offset = tank_block->x - prev_tank_block.x;
+		u32 delta;
+		u32 set_delta;
+		u32 reset_delta;
+		u32 new = tank_bmp[tank_y];
+		u32 prev = tank_bmp[tank_y];
+		if (offset > 0) {
+			new = new << offset;
+		} else if (offset < 0) {
+			offset = -offset;
+			new = new >> offset;
+		}
+		delta = new ^ prev;
+
+		u16 x;
+		x = prev_tank_block.x;
+		set_delta = delta & ~prev;
+		reset_delta = delta & prev;
+
+		while (set_delta || reset_delta) {
+			if (set_delta & BIT0) {
+				set_point(x, y + tank_y, COLOR_GREEN);
+			}
+			if (reset_delta & BIT0) {
+				clr_point (x,y+tank_y);
+			}
+
+			reset_delta >>= 1;
+			set_delta >>= 1;
+			x++;
+		}
+	}
+	memcpy(&prev_tank_block, tank_block, sizeof(point_t));
+
+}
+
+static void update_bunkers(u16* bunkerStates) {
+	static u16 prev_bunker_state[GAME_BUNKER_COUNT] = { BMP_BUNKER_STATES,
+			BMP_BUNKER_STATES, BMP_BUNKER_STATES, BMP_BUNKER_STATES };
+
+	const u32* erosion_states_bmp[BMP_BUNKER_STATES + 1] =
+			{ bmp_bunkerDamage0_6x6, bmp_bunkerDamage1_6x6,
+					bmp_bunkerDamage2_6x6, bmp_bunkerDamage3_6x6,
+					bmp_bunkerDamage4_6x6 };
+
+	u16 bunker_num;
+	for (bunker_num = 0; bunker_num < GAME_BUNKER_COUNT; bunker_num++) {
+		if (bunkerStates[bunker_num] != prev_bunker_state[bunker_num]) {
+			const u32* new_erosion_state_bmp =
+					erosion_states_bmp[bunkerStates[bunker_num]];
+			const u32* prev_erosion_state_bmp =
+					erosion_states_bmp[prev_bunker_state[bunker_num]];
+			u16 y = GAME_BUNKER_Y + BMP_EROSION_H;
+			u16 bunker_y;
+			for (bunker_y = 0; bunker_y < BMP_EROSION_H; bunker_y++) {
+				u32 delta;
+				u32 set_delta;
+				u32 reset_delta;
+				u32 new = new_erosion_state_bmp[bunker_y];
+				u32 prev = prev_erosion_state_bmp[bunker_y];
+				delta = new ^ prev;
+
+				u16 x;
+				x = GAME_BUNKER_POS + GAME_BUNKER_SEP * bunker_num;
+				set_delta = delta & ~prev;
+				reset_delta = delta & prev;
+
+				while (set_delta || reset_delta) {
+					if (set_delta & BIT0) {
+						set_point(x, y + bunker_y, COLOR_GREEN);
+					}
+					if (reset_delta & BIT0) {
+						clr_point (x,y+bunker_y);
+					}
+
+					reset_delta >>= 1;
+					set_delta >>= 1;
+					x++;
+				}
+			}
+			memcpy(&prev_bunker_state, bunkerStates, sizeof(u16));
+		}
+	}
+}
+
+static void update_bullet(point_t* tankBulletPos) {
+
+	return;
+}
+
+void render(point_t* tankPos, point_t* tankBulletPos, u8 tank_bullet_flag,
 		alien_block_t* alienBlock, alien_bullet_t* alienBullets,
-		u16* bunkerStates) {
+		u8* alien_missile_flag, u16* bunkerStates) {
 
 	update_alien_block(alienBlock);
-	//frameIndex = (frameIndex + 1) % 2; // Alternate between frame 0 and frame 1.
 
+	update_tank(tankPos);
+
+	update_bunkers(bunkerStates);
+
+	if (tankBulletPos->y == (tankPos->y - BMP_BULLET_OFF) && tank_bullet_flag) {
+		const u32* bullet_bmp = bmp_bullet_straight_3x5;
+		draw_bitmap(bullet_bmp, COLOR_WHITE, tankBulletPos->x,
+				tankBulletPos->y, BMP_BULLET_W, BMP_BULLET_H);
+	}
+	u8 alien_missiles = 0;
+	for (alien_missiles; alien_missiles < BMP_MISSILES; alien_missiles++) {
+		xil_printf("\r\nMISSILES %d %d %d\r\n", alienBullets[alien_missiles].y,
+				alienBlock->pos.y + (ALIENS_SEPY + BMP_ALIEN_H) * 5,
+				alien_missile_flag[alien_missiles]);
+		if (alienBullets[alien_missiles].y == (alienBlock->pos.y
+				+ (BMP_ALIEN_H) * 9) && alien_missile_flag[alien_missiles]) {
+			const u32* alien_missile_bmp = bmp_alien_missile_cross2_3x5;
+			draw_bitmap(alien_missile_bmp, COLOR_WHITE,
+					alienBullets[alien_missiles].x,
+					alienBullets[alien_missiles].y, BMP_BULLET_W, BMP_BULLET_H);
+		}
+	}
 }
 
 static inline void set_point(s32 x, s32 y, u32 color) {
