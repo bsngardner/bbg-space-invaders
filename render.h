@@ -9,24 +9,26 @@
 #define RENDER_H_
 
 #include "xil_types.h"
+#include "game.h"
+#include "bmp.h"
 
-typedef struct point_t {
-	s16 x;
-	s16 y;
-} point_t;
+#define SCREEN_H 480
+#define SCREEN_W 640
+#define GAME_H (SCREEN_H/2)
+#define GAME_W (SCREEN_W/2)
 
-typedef struct alien_bullet_t{
-	s16 x;
-	s16 y;
-	enum {
-		WEAK, NORMAL, STRONG
-	} type;
-} alien_bullet_t;
+#define GAME_BUNKER_COUNT 4
+#define GAME_BUNKER_POS (GAME_W/8-BMP_BUNKER_W/2)
+#define GAME_BUNKER_SEP (GAME_W/4)
+#define GAME_BUNKER_Y ((GAME_H*3)/4-BMP_BUNKER_H/2)
+
+#define RENDER_TANK_Y (GAME_H*7/8)
+#define RENDER_TANK_X (GAME_W/2-BMP_TANK_W/2)
 
 //Function prototypes
-void render(point_t* tankPos, point_t* tankBulletPos, point_t* alienBlockPos,
-		alien_bullet_t* alienBullets, u16* bunkerStates);
-
 void render_init();
+void render(point_t* tankPos, point_t* tankBulletPos,
+		alien_block_t* alienBlock, alien_bullet_t* alienBullets,
+		u16* bunkerStates);
 
 #endif /* RENDER_H_ */
