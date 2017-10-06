@@ -22,6 +22,8 @@
 #define COLOR_BLACK 0x00000000
 #define COLOR_WHITE 0x00FFFFFF
 #define GAME_BACKGROUND COLOR_BLACK
+#define BUNKER_ROWS 3
+#define BUNKER_COLS 4
 
 #define FRAME_BUFFER_0_ADDR 0xC1000000  // Starting location in DDR where we will store the images that we display.
 static u32* frame0 = (u32*) FRAME_BUFFER_0_ADDR;
@@ -283,10 +285,16 @@ static void update_tank(point_t* tank_block) {
 }
 
 static void update_bunkers(u16* bunkerStates) {
-	static u16 prev_bunker_state[GAME_BUNKER_COUNT] = { BMP_BUNKER_STATES,
-			BMP_BUNKER_STATES, BMP_BUNKER_STATES, BMP_BUNKER_STATES };
+	static u16 prev_bunker_state[GAME_BUNKER_COUNT] = { BMP_BUNKER_MAX,
+			BMP_BUNKER_MAX, BMP_BUNKER_MAX, BMP_BUNKER_MAX };
 
-	const u32* erosion_states_bmp[BMP_BUNKER_STATES + 1] =
+	const u32* bmp_bunker_blocks[BUNKER_ROWS * BUNKER_COLS] =
+			{ bmp_bunker2_6x6, bmp_bunker1_6x6, bmp_bunker1_6x6,
+					bmp_bunker0_6x6, bmp_bunker1_6x6, bmp_bunker5_6x6,
+					bmp_bunker3_6x6, bmp_bunker1_6x6, bmp_bunker1_6x6,
+					bmp_bunker4_6x6, bmp_bunker4_6x6, bmp_bunker1_6x6 };
+
+	const u32* erosion_states_bmp[BMP_BUNKER_STATES] =
 			{ bmp_bunkerDamage0_6x6, bmp_bunkerDamage1_6x6,
 					bmp_bunkerDamage2_6x6, bmp_bunkerDamage3_6x6,
 					bmp_bunkerDamage4_6x6 };
@@ -296,34 +304,28 @@ static void update_bunkers(u16* bunkerStates) {
 		if (bunkerStates[bunker_num] != prev_bunker_state[bunker_num]) {
 			const u32* new_erosion_state_bmp =
 					erosion_states_bmp[bunkerStates[bunker_num]];
-			const u32* prev_erosion_state_bmp =
-					erosion_states_bmp[prev_bunker_state[bunker_num]];
-			u16 y = GAME_BUNKER_Y + BMP_EROSION_H;
-			u16 bunker_y;
-			for (bunker_y = 0; bunker_y < BMP_EROSION_H; bunker_y++) {
-				u32 delta;
-				u32 set_delta;
-				u32 reset_delta;
-				u32 new = new_erosion_state_bmp[bunker_y];
-				u32 prev = prev_erosion_state_bmp[bunker_y];
-				delta = new ^ prev;
 
-				u16 x;
-				x = GAME_BUNKER_POS + GAME_BUNKER_SEP * bunker_num;
-				set_delta = delta & ~prev;
-				reset_delta = delta & prev;
+			u16 row;
+			u16 column;
+			for (row = 0; row < BUNKER_ROWS; row++) {
+				u16 y = GAME_BUNKER_Y + BMP_EROSION_H * row;
+				for (column = 0; column < BUNKER_COLS; column++) {
 
-				while (set_delta || reset_delta) {
-					if (set_delta & BIT0) {
-						set_point(x, y + bunker_y, COLOR_GREEN);
+					u16 x = GAME_BUNKER_POS + GAME_BUNKER_SEP * bunker_num
+							+ BMP_EROSION_H * column;
+					const u32* prev_erosion_state_bmp = bmp_bunker_blocks[row
+							* BUNKER_COLS + column];
+
+					u16 bits;
+					u32 erosion_bmp[BMP_EROSION_BITS];
+					for (bits = 0; bits < BMP_EROSION_BITS; bits++) {
+						erosion_bmp[bits] = new_erosion_state_bmp[bits]
+								& prev_erosion_state_bmp[bits];
 					}
-					if (reset_delta & BIT0) {
-						clr_point (x,y+bunker_y);
-					}
-
-					reset_delta >>= 1;
-					set_delta >>= 1;
-					x++;
+					draw_bitmap(bmp_bunkerDamage4_6x6, COLOR_BLACK, x, y,
+							BMP_EROSION_H, BMP_EROSION_H);
+					draw_bitmap(erosion_bmp, COLOR_GREEN, x, y, BMP_EROSION_H,
+							BMP_EROSION_H);
 				}
 			}
 			memcpy(&prev_bunker_state, bunkerStates, sizeof(u16));
@@ -353,9 +355,7 @@ void render(point_t* tankPos, point_t* tankBulletPos, u8 tank_bullet_flag,
 	}
 	u8 alien_missiles = 0;
 	for (alien_missiles; alien_missiles < BMP_MISSILES; alien_missiles++) {
-		xil_printf("\r\nMISSILES %d %d %d\r\n", alienBullets[alien_missiles].y,
-				alienBlock->pos.y + (ALIENS_SEPY + BMP_ALIEN_H) * 5,
-				alien_missile_flag[alien_missiles]);
+
 		if (alienBullets[alien_missiles].y == (alienBlock->pos.y
 				+ (BMP_ALIEN_H) * 9) && alien_missile_flag[alien_missiles]) {
 			const u32* alien_missile_bmp = bmp_alien_missile_cross2_3x5;

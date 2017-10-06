@@ -158,6 +158,30 @@ const u32 bmp_bunker_24x18[] = { packword24(0, 0, 0, 1, 1, 1, 1, 1, 1,
 				0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1), packword24(1, 1, 1, 1, 1, 1,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1) };
 
+const u32 bmp_bunker0_6x6[] =
+		{ packword6(0, 0, 0, 1, 1, 1), packword6(0, 0, 1, 1, 1, 1),
+				packword6(0,1,1,1,1,1), packword6(1,1,1,1,1,1),
+				packword6(1,1,1,1,1,1), packword6(1,1,1,1,1,1) };
+const u32 bmp_bunker1_6x6[] =
+		{ packword6(1, 1, 1, 1, 1, 1), packword6(1, 1, 1, 1, 1, 1),
+				packword6(1,1,1,1,1,1), packword6(1,1,1,1,1,1),
+				packword6(1,1,1,1,1,1), packword6(1,1,1,1,1,1) };
+const u32 bmp_bunker2_6x6[] =
+		{ packword6(1, 1, 1, 0, 0, 0), packword6(1, 1, 1, 1, 0, 0),
+				packword6(1,1,1,1,1,0), packword6(1,1,1,1,1,1),
+				packword6(1,1,1,1,1,1), packword6(1,1,1,1,1,1) };
+const u32 bmp_bunker3_6x6[] =
+		{ packword6(1, 1, 1, 1, 1, 1), packword6(1, 1, 1, 1, 0, 0),
+				packword6(1,1,1,0,0,0), packword6(1,1,0,0,0,0),
+				packword6(1,0,0,0,0,0), packword6(0,0,0,0,0,0) };
+const u32 bmp_bunker4_6x6[] =
+		{ packword6(0, 0, 0, 0, 0, 0), packword6(0, 0, 0, 0, 0, 0),
+				packword6(0,0,0,0,0,0), packword6(0,0,0,0,0,0),
+				packword6(0,0,0,0,0,0), packword6(0,0,0,0,0,0) };
+const u32 bmp_bunker5_6x6[] =
+		{ packword6(1, 1, 1, 1, 1, 1), packword6(0, 0, 1, 1, 1, 1),
+				packword6(0,0,0,1,1,1), packword6(0,0,0,0,1,1),
+				packword6(0,0,0,0,0,1), packword6(0,0,0,0,0,0) };
 // These are the blocks that comprise the bunker and each time a bullet
 // strikes one of these blocks, you erode the block as you sequence through
 // these patterns.
