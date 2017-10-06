@@ -20,8 +20,10 @@
 #define BMP_ALIEN_H 8
 #define BMP_ALIEN_W 18
 
-#define BMP_BUNKER_STATES 4
+#define BMP_BUNKER_MAX 4
+#define BMP_BUNKER_STATES 5
 #define BMP_EROSION_H 6
+#define BMP_EROSION_BITS BMP_EROSION_H*BMP_EROSION_H
 
 #define BMP_BULLET_H 5
 #define BMP_BULLET_W 3
@@ -68,4 +70,10 @@ extern const u32 bmp_bunkerDamage2_6x6[];
 extern const u32 bmp_bunkerDamage3_6x6[];
 extern const u32 bmp_bunkerDamage4_6x6[];
 
+extern const u32 bmp_bunker0_6x6[];
+extern const u32 bmp_bunker1_6x6[];
+extern const u32 bmp_bunker2_6x6[];
+extern const u32 bmp_bunker3_6x6[];
+extern const u32 bmp_bunker4_6x6[];
+extern const u32 bmp_bunker5_6x6[];
 #endif /* BMP_H_ */

@@ -5,8 +5,14 @@
  *      Author: superman
  */
 
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include "game_controller.h"
-
+#include "game.h"
+#include "render.h"
+#include "bmp.h"
 #include "table.h"
 
 #define check(byte,bit) (byte & (table_bit[bit]))
@@ -19,17 +25,12 @@ u16 bunker_states[BUNKERS];
 alien_missiles_t alien_missiles[MISSILES];
 //
 tank_t tank = { { TANK_X, TANK_Y }, { { -1, -1 }, 0 } };
-alien_block_t block = { { ALIEN_X, ALIEN_Y }, ALIEN_SEP * ALIEN_ROW_LEN, 0,
-		{ 0 }, OUT };
+alien_block_t block = { { ALIEN_X, ALIEN_Y }, 0, 0, { 0 }, OUT };
 
 void game_controller_init(void) {
 
 	//initialize the bunker states to full health
 	init_bunker_states();
-
-#ifdef DEBUG
-	xil_printf("\r\nTANK POSITION %d %d\r\n", tank_pos.x, tank_pos.y);
-#endif
 
 	u32 init_timer = ALIEN_INIT;
 	//initialize the alien life/death array
@@ -47,10 +48,6 @@ void game_controller_init(void) {
 		render(&tank, &block, &alien_missiles, bunker_states);
 	}
 
-#ifdef DEBUG
-	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", block.pos.x, block.pos.y);
-#endif
-
 	//random seed
 	srand(time(0));
 }
@@ -59,7 +56,6 @@ void game_controller_run(void) {
 	//wait for keyboard input from the user
 	char input;
 	input = getchar();
-	xil_printf("%c\r\n", input);
 	//switch statement for handling different keyboard presses
 	switch (input) {
 	//case for key 2
@@ -104,7 +100,6 @@ void game_controller_run(void) {
 		break;
 		//case for an invalid button press
 	default:
-		xil_printf("Invalid input (%c)\r\n", input);
 		break;
 	}
 	render(&tank, &block, &alien_missiles, bunker_states);
@@ -114,13 +109,6 @@ void init_bunker_states(void) {
 	u8 i;
 	for (i = 0; i < BUNKERS; i++)
 		bunker_states[i] = BUNKER_MAX;
-}
-
-void print_bunkers(void) {
-	u8 i;
-	for (i = 0; i < BUNKERS; i++)
-		xil_printf("%d", bunker_states[i]);
-	xil_printf("\r\n");
 }
 
 direction alien_direction = RIGHT;
@@ -133,9 +121,6 @@ void move_tank(direction d) {
 		if (tank.pos.x <= GAME_WIDTH - BMP_TANK_W - MOVE_SPRITE)
 			tank.pos.x += MOVE_SPRITE;
 	}
-#ifdef DEBUG
-	xil_printf("TANK POSITION %d %d\r\n", tank_pos.x, tank_pos.y);
-#endif
 }
 void update_alien_position(void) {
 
@@ -155,9 +140,6 @@ void update_alien_position(void) {
 			alien_direction = LEFT;
 		}
 	}
-#ifdef DEBUG
-	xil_printf("ALIEN BLOCK POSITION %d %d\r\n", block.pos.x, block.pos.y);
-#endif
 
 	if (block.legs == OUT)
 		block.legs = IN;
@@ -165,31 +147,16 @@ void update_alien_position(void) {
 		block.legs = OUT;
 }
 
-void print_array(void) {
-	u8 i;
-	for (i = 0; i < ALIEN_ROWS; i++) {
-		xil_printf("%08x\n\r", block.alien_status[i]);
-		u8 j;
-		//for (j = 0; j < ALIEN_ROW_LEN + 13; j++)
-		//xil_printf("%d", !!check(block.alien_status[i],j));
-		//xil_printf("\r\n");
-	}
-	xil_printf("\r\n");
-}
-
 void kill_alien(void) {
-	xil_printf("PLEASE SPECIFY A NUMBER 0-54\r\n");
 	char inputs[BUFFER];
 	u8 i = 0;
 	u8 alien_no;
 	char input;
 	while (input != ENTER) {
 		input = getchar();
-		xil_printf("%c", input);
 		inputs[i] = input;
 		i++;
 		if (i > INPUT_OVERFLOW) {
-			xil_printf("\r\nSTOP IT!!\r\n");
 			return;
 		}
 	}
@@ -198,12 +165,10 @@ void kill_alien(void) {
 	} else if (i == TWO_DIGITS) {
 		alien_no = 10 * to_digit(inputs[0]) + to_digit(inputs[1]);
 	} else {
-		xil_printf("INVALID NUMBER\r\n");
 		return;
 	}
 
 	if (alien_no >= ALIEN_ROWS * ALIEN_ROW_LEN) {
-		xil_printf("INVALID NUMBER\r\n");
 		return;
 	}
 	clear(block.alien_status[alien_no/ALIEN_ROW_LEN],alien_no%ALIEN_ROW_LEN);
@@ -214,42 +179,31 @@ void kill_alien(void) {
 	}
 	u16 maskp = mask;
 	u8 n = 10;
-	xil_printf("Right?\n\r");
+
 	while (maskp >>= 1) {
-		xil_printf(":%04x - %d\n\r", maskp, n);
 		n--;
 	}
-	xil_printf("Left?\n\r");
+
 	i = 10;
 	maskp = mask;
-	while (maskp = ((maskp << 1) & ALIEN_ROW_ALIVE)) {
-		xil_printf(":%04x - %d\n\r", maskp, i);
+	while ((maskp = ((maskp << 1) & ALIEN_ROW_ALIVE))) {
 		i--;
 	}
 	block.loffset = i * ALIEN_SEP;
 	block.roffset = n * ALIEN_SEP;
 
-	xil_printf("mask: %08x\n\rloffset: %d\n\roffset: %d\n\r", mask,
-			block.loffset, block.roffset);
-
-	print_array();
 }
 void fire_tank_bullet(void) {
 	if (tank.missile.active == 0) {
 		tank.missile.pos.x = tank.pos.x + TANK_BULL_X;
 		tank.missile.pos.y = tank.pos.y - TANK_BULL_Y;
 		tank.missile.active = 1;
-#ifdef DEBUG
-		xil_printf("TANK BULLET POSITION %d %d\r\n", tank_bullet_pos.x,
-				tank_bullet_pos.y);
-#endif
-	} else {
-		xil_printf("BULLET ALREADY FIRED\r\n");
 	}
 }
 void fire_alien_missile(void) {
 	u8 i;
-	u8 alien_shooter;
+	u8 shooter_col;
+
 	for (i = 0; i < MISSILES; i++) {
 		if (!alien_missiles[i].active) {
 			alien_missiles[i].active = 1;
@@ -257,24 +211,27 @@ void fire_alien_missile(void) {
 		}
 	}
 	if (i == MISSILES) {
-		xil_printf("MISSILES ALREADY FIRED\r\n");
 		return;
 	}
 	u8 fired = 0;
+	u8 shooter_row = ALIEN_ROWS - 1;
 	while (!fired) {
-		alien_shooter = rand() % ALIEN_COLS + BOT_LEFT_ALIEN;
-		if (check(block.alien_status[alien_shooter/ALIEN_ROW_LEN],alien_shooter%ALIEN_ROW_LEN))
+		shooter_col = rand() % ALIEN_COLS;
+		while (!check(block.alien_status[shooter_row],shooter_col))
+			shooter_row--;
+		if (shooter_row != 0) {
 			fired = 1;
+		}
 	}
-	alien_missiles[i].pos.x = block.pos.x + ((alien_shooter % ALIEN_COLS)
-			* ALIEN_WIDTH) + ALIEN_MID;
-	alien_missiles[i].pos.y = block.pos.y + BLOCK_H;
-	alien_missiles[i].type = NORMAL;
+	alien_missiles[i].pos.x = block.pos.x + shooter_col * ALIEN_WIDTH
+			+ ALIEN_MID;
+	alien_missiles[i].pos.y = block.pos.y + (shooter_row + 1) * ALIEN_SEP
+			- ALIEN_MID;
+	if (rand() % 4 == 0)
+		alien_missiles[i].type = STRONG;
+	else
+		alien_missiles[i].type = NORMAL;
 
-#ifdef DEBUG
-	xil_printf("MISSILE %d FIRED AT %d %d\r\n", i, alien_missiles[i].x,
-			alien_missiles[i].y);
-#endif
 }
 void update_bullets(void) {
 	if (tank.missile.active) {
@@ -282,10 +239,6 @@ void update_bullets(void) {
 		if (tank.missile.pos.y < 0) {
 			tank.missile.active = 0;
 		}
-#ifdef DEBUG
-		xil_printf("TANK BULLET POSITION %d %d\r\n", tank_bullet_pos.x,
-				tank_bullet_pos.y);
-#endif
 	}
 	u8 i;
 	for (i = 0; i < MISSILES; i++) {
@@ -299,27 +252,18 @@ void update_bullets(void) {
 			if (alien_missiles[i].pos.y >= GAME_HEIGHT) {
 				alien_missiles[i].active = 0;
 			}
-#ifdef DEBUG
-			xil_printf("ALIEN MISSILE POSITION %d %d\r\n", alien_missiles[i].x,
-					alien_missiles[i].y);
-#endif
+
 		}
 	}
 
 }
 void erode_bunker(void) {
-	xil_printf("PLEASE SPECIFY A NUMBER 0-3\r\n");
 	char input;
 	input = getchar();
-	xil_printf("%c\r\n", input);
 	u8 bunker_no = to_digit(input);
 	if (bunker_no >= BUNKERS) {
-		xil_printf("INVALID NUMBER\r\n");
 		return;
 	}
 	if (bunker_states[bunker_no] != 0)
 		bunker_states[bunker_no] = bunker_states[bunker_no]--;
-	xil_printf("ERODED BUNKER %d to state %d\r\n", bunker_no,
-			bunker_states[bunker_no]);
-	print_bunkers();
 }

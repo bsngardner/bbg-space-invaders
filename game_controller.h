@@ -8,7 +8,9 @@
 #ifndef GAME_CONTROLLER_H_
 #define GAME_CONTROLLER_H_
 
-#include "bmp.h"
+
+#include "xil_types.h"
+
 
 #define ALIEN_ROWS 5
 #define ALIEN_ROW_LEN 11
@@ -60,14 +62,6 @@
 typedef enum {
 	LEFT, RIGHT
 } direction;
-
-#include "xil_types.h"
-#include "game.h"
-#include "render.h"
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
 
 void game_controller_init(void);
 void game_controller_run(void);
