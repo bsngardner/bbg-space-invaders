@@ -363,7 +363,7 @@ static void update_bunkers(u16* bunkerStates) {
 static void update_missiles(tank_t * tank, alien_missiles_t* alien_missiles) {
 	u16 py;
 	u16 n;
-	for (n = 0; n < MISSILES; n++) {
+	for (n = 0; n < GAME_CONTROLLER_MISSILES; n++) {
 		py = alien_missiles[n].pos.y - 2;
 		draw_bitmap(
 				bmp_alien_missiles[alien_missiles[n].type][!alien_missiles[n].state],
