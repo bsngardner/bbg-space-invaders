@@ -1,5 +1,10 @@
 /*
- * helloworld.c: simple test application
+ * main.c: simple test application
+ *
+ * main file for startup. Inits platform and calls game_controller
+ *
+ *  Broderick Gardner
+ *  Benjamin Gardner
  */
 
 #include <stdio.h>
@@ -15,15 +20,13 @@
 #define DEBUG
 void print(char *str);
 
-
-
 int main() {
 	init_platform(); // Necessary for all programs.
 
 	render_init();
 
 	// Oscillate between frame 0 and frame 1.
-	 // Just a cheap delay between frames.
+	// Just a cheap delay between frames.
 
 	game_controller_init();
 	while (1) {

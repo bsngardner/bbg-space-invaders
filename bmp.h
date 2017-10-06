@@ -1,8 +1,11 @@
 /*
  * bmp.h
  *
+ * Contains bitmap externs and defines for bitmap dimensions
+ *
  *  Created on: Sep 28, 2017
- *      Author: superman
+ *      Author:  Broderick Gardner
+ *      		Benjamin Gardner
  */
 
 #ifndef BMP_H_
@@ -10,6 +13,7 @@
 
 #include "xil_types.h"
 
+//Defines for bitmap sizes
 #define BMP_BUNKER_H 18
 #define BMP_BUNKER_W 24
 

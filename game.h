@@ -24,7 +24,9 @@ typedef struct {
 typedef struct {
 	point_t pos;
 	u16 active :1;
-	u16 state :2;
+	enum {
+		GUISE_0=0, GUISE_1=1 //guise of the alien bullet
+	} guise;
 	enum {
 		NORMAL = 0, STRONG = 1
 	} type;
