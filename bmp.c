@@ -8,6 +8,9 @@
 #include <stdint.h>
 #include "bmp.h"
 
+//Macros
+//Utilities for packing bits into bitmaps
+
 #define packword32(b31,b30,b29,b28,b27,b26,b25,b24,b23,b22,b21,b20,b19,b18,b17,b16,b15,b14,b13,b12,b11,b10,b9,b8,b7,b6,b5,b4,b3,b2,b1,b0) ( \
 (b31 << 31) | (b30 << 30) | (b29 << 29) | (b28 << 28) | (b27 << 27) | (b26 << 26) | (b25 << 25) | (b24 << 24) |						  \
  (b23 << 23) | (b22 << 22) | (b21 << 21) | (b20 << 20) | (b19 << 19) | (b18 << 18) | (b17 << 17) | (b16 << 16) |						  \
@@ -29,14 +32,12 @@
 #define packword15(b14,b13,b12,b11,b10,b9,b8,b7,b6,b5,b4,b3,b2,b1,b0) ((		\
 (b14 << 14) | (b13 << 13) | (b12 << 12) | (b11 << 11) | (b10 << 10) | (b9  << 9 ) | (b8  << 8 ) |						  \
  (b7  << 7 ) | (b6  << 6 ) | (b5  << 5 ) | (b4  << 4 ) | (b3  << 3 ) | (b2  << 2 ) | (b1  << 1 ) | (b0  << 0 ) 	\
- ) << 2)
-
+ ) << 2)	//Padding
 //Modified to pad bitmap!
 #define packword12(b11,b10,b9,b8,b7,b6,b5,b4,b3,b2,b1,b0)	((	\
 (b11 << 11) | (b10 << 10) | (b9  << 9 ) | (b8  << 8 ) |						  \
  (b7  << 7 ) | (b6  << 6 ) | (b5  << 5 ) | (b4  << 4 ) | (b3  << 3 ) | (b2  << 2 ) | (b1  << 1 ) | (b0  << 0 ) 	\
- ) << 3)
-
+ ) << 3)	//Padding
 #define packword6(b5,b4,b3,b2,b1,b0)	(	\
 (b5  << 5 ) | (b4  << 4 ) | (b3  << 3 ) | (b2  << 2 ) | (b1  << 1 ) | (b0  << 0 ) 	\
  )
@@ -54,6 +55,7 @@ const u32 bmp_saucer_16x7[] = { packword16(0, 0, 0, 0, 0, 1, 1, 1, 1,
 				0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0), packword16(0, 0,
 				0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) };
 
+//Alien explosion
 const u32 bmp_alien_explosion_12x10[] = { packword12(0, 0, 0, 0, 0, 0,
 		1, 0, 0, 0, 0, 0), packword12(0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0),
 		packword12(1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0), packword12(0, 1, 0, 0,
@@ -63,6 +65,7 @@ const u32 bmp_alien_explosion_12x10[] = { packword12(0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 1, 0, 0, 1), packword12(0, 1, 0, 0, 0, 1, 0, 0, 1,
 				0, 0, 0), packword12(0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0) };
 
+//Alien top in
 const u32 bmp_alien_top_in_12x8[] = { packword12(0, 0, 0, 0, 0, 1, 1,
 		0, 0, 0, 0, 0), packword12(0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0),
 		packword12(0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0), packword12(0, 0, 1, 1,
@@ -71,6 +74,7 @@ const u32 bmp_alien_top_in_12x8[] = { packword12(0, 0, 0, 0, 0, 1, 1,
 		packword12(0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0), packword12(0, 0, 0, 1,
 				0, 0, 0, 0, 1, 0, 0, 0) };
 
+//Alien top out
 const u32 bmp_alien_top_out_12x8[] = { packword12(0, 0, 0, 0, 0, 1, 1,
 		0, 0, 0, 0, 0), packword12(0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0),
 		packword12(0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0), packword12(0, 0, 1, 1,
@@ -79,6 +83,7 @@ const u32 bmp_alien_top_out_12x8[] = { packword12(0, 0, 0, 0, 0, 1, 1,
 		packword12(0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0), packword12(0, 0, 1, 0,
 				1, 0, 0, 1, 0, 1, 0, 0) };
 
+//Alien middle in
 const u32 bmp_alien_middle_in_12x8[] = { packword12(0, 0, 0, 1, 0, 0,
 		0, 0, 0, 1, 0, 0), packword12(0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0),
 		packword12(0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0), packword12(0, 0, 1, 1,
@@ -87,6 +92,7 @@ const u32 bmp_alien_middle_in_12x8[] = { packword12(0, 0, 0, 1, 0, 0,
 		packword12(0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1), packword12(0, 0, 0, 0,
 				1, 1, 0, 1, 1, 0, 0, 0) };
 
+//Alien middle out
 const u32 bmp_alien_middle_out_12x8[] = { packword12(0, 0, 0, 1, 0, 0,
 		0, 0, 0, 1, 0, 0), packword12(0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1),
 		packword12(0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1), packword12(0, 1, 1, 1,
@@ -95,6 +101,7 @@ const u32 bmp_alien_middle_out_12x8[] = { packword12(0, 0, 0, 1, 0, 0,
 		packword12(0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0), packword12(0, 0, 1, 0,
 				0, 0, 0, 0, 0, 0, 1, 0) };
 
+//Alien bottom in
 const u32 bmp_alien_bottom_in_12x8[] = { packword12(0, 0, 0, 0, 1, 1,
 		1, 1, 0, 0, 0, 0), packword12(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0),
 		packword12(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), packword12(1, 1, 1, 0,
@@ -103,6 +110,7 @@ const u32 bmp_alien_bottom_in_12x8[] = { packword12(0, 0, 0, 0, 1, 1,
 		packword12(0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0), packword12(0, 0, 1, 1,
 				0, 0, 0, 0, 1, 1, 0, 0) };
 
+//Alien bottom out
 const u32 bmp_alien_bottom_out_12x8[] = { packword12(0, 0, 0, 0, 1, 1,
 		1, 1, 0, 0, 0, 0), packword12(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0),
 		packword12(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), packword12(1, 1, 1, 0,
@@ -111,8 +119,10 @@ const u32 bmp_alien_bottom_out_12x8[] = { packword12(0, 0, 0, 0, 1, 1,
 		packword12(0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0), packword12(1, 1, 0, 0,
 				0, 0, 0, 0, 0, 0, 1, 1) };
 
+//Empty alien
 const u32 bmp_alien_empty[8] = { 0 };
 
+//Lookup tables for easy bitmap selection
 const u32* bmp_aliens_out[] = { bmp_alien_top_out_12x8,
 		bmp_alien_middle_out_12x8, bmp_alien_middle_out_12x8,
 		bmp_alien_bottom_out_12x8, bmp_alien_bottom_out_12x8 };
@@ -122,6 +132,7 @@ const u32* bmp_aliens_in[] = { bmp_alien_top_in_12x8, bmp_alien_middle_in_12x8,
 
 const u32** bmp_aliens[] = { bmp_aliens_out, bmp_aliens_in };
 
+//Tank bitmap
 const u32 bmp_tank_15x8[] = { packword15(0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
 		0, 0, 0, 0, 0),
 		packword15(0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0), packword15(0,
@@ -209,30 +220,27 @@ const u32 bmp_bunkerDamage4_6x6[] = { packword6(1, 1, 1, 1, 1, 1),
 				1, 1, 1, 1, 1), packword6(1, 1, 1, 1, 1, 1), packword6(1, 1, 1,
 				1, 1, 1) };
 
+//Missile bitmaps
 const u32
 		bmp_alien_missile_cross2_3x5[] =
 				{ packword3(0, 1, 0), packword3(0, 1,
 						0), packword3(0, 1, 0), packword3(1, 1, 1),
 						packword3(0, 1, 0) };
-
 const u32
 		bmp_alien_missile_cross1_3x5[] =
 				{ packword3(0, 1, 0), packword3(1, 1,
 						1), packword3(0, 1, 0), packword3(0, 1, 0),
 						packword3(0, 1, 0) };
-
 const u32
 		bmp_alien_missile_diagonal1_3x5[] = { packword3(1, 0, 0),
 				packword3(0, 1,
 						0), packword3(0, 0, 1), packword3(0, 1, 0),
 				packword3(1, 0, 0) };
-
 const u32
 		bmp_alien_missile_diagonal2_3x5[] = { packword3(0, 0, 1),
 				packword3(0, 1,
 						0), packword3(1, 0, 0), packword3(0, 1, 0),
 				packword3(0, 0, 1) };
-
 const u32* bmp_alien_missiles_cross[] = { bmp_alien_missile_cross2_3x5,
 		bmp_alien_missile_cross1_3x5 };
 const u32* bmp_alien_missiles_diagonal[] = { bmp_alien_missile_diagonal1_3x5,

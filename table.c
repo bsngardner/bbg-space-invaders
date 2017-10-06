@@ -1,12 +1,16 @@
 /*
  * table.c
  *
+ * Lookup tables and other optimizations.
+ *
  *  Created on: Oct 5, 2017
- *      Author: superman
+ *      Author:  Broderick Gardner
+ *      		Benjamin Gardner
  */
 
 #include "xil_types.h"
 
+//Utility macro and defines for lookup table
 #define BIT(x) (1 << (x))
 #define BIT0 BIT(0)
 #define BIT1 BIT(1)
@@ -25,5 +29,6 @@
 #define BIT14 BIT(14)
 #define BIT15 BIT(15)
 
+//Lookup table for bit position masks
 const u16 table_bit[] = { BIT0, BIT1, BIT2, BIT3, BIT4, BIT5, BIT6, BIT7, BIT8,
 		BIT9, BIT10, BIT11, BIT12, BIT13, BIT14, BIT15 };

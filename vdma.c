@@ -1,8 +1,11 @@
 /*
  * vdma.c
  *
+ * Contains given code for video dma initialization
+ *
  *  Created on: Oct 4, 2017
- *      Author: superman
+ *      Author: Broderick Gardner
+ *      		Benjamin Gardner
  */
 #include <stdio.h>
 
