@@ -40,6 +40,8 @@
 
 #define BULLET_POS -1 //initial bullet position
 #define MOVE_SPRITE 2 //increment at which sprites move
+#define OFFSET_MAX 10 //max offset for deleting columns
+#define BIT_SHIFT 1
 
 #define BUNKERS 4	//number of bunkers
 #define BUNKER_MAX 4 //max health of bunkers
@@ -68,6 +70,15 @@
 #define TANK_Y GAME_HEIGHT*7/8	//starting y location of the tank
 #define TANK_BULL_Y 7		//bullet y offset for tank
 #define	TANK_BULL_X (19/2)-1 //bullet x offset for tank
+
+void move_tank(direction); //function that moves the tank
+void update_alien_position(void); //function that updates the alien block position
+void kill_alien(void); //function that queries the user for an alien to kill, then wipes it out
+void fire_tank_bullet(void); //function that fires the tank bullet
+void fire_alien_missile(void); //function that fires the alien missiles
+void update_bullets(void); //function that updates the position of all bullets, both alien and tank
+void erode_bunker(void); //function that updates (erodes) the states of the bunkers
+void init_bunker_states(void); //function that sets the bunker states to max health
 
 u16 bunker_states[BUNKERS]; //array of 4 bunker states
 
@@ -215,24 +226,24 @@ void kill_alien(void) {
 	if (alien_no >= ALIEN_ROWS * ALIEN_ROW_LEN) {
 		return;
 	}
-	//remove the alien from the alien block
+	//remove the alien from the alien bit table
 	clear(block.alien_status[alien_no/ALIEN_ROW_LEN],alien_no%ALIEN_ROW_LEN);
 
-	//create a mask to
+	//takes all the row status bits and ORs them together to find offset
 	u16 mask = 0;
 	for (i = 0; i < ALIEN_ROWS; i++) {
-		mask |= block.alien_status[i];
+		mask |= block.alien_status[i]; //OR together the statuses
 	}
-	u16 maskp = mask;
-	u8 n = 10;
+	u16 maskp = mask; //init the mask
+	u8 n = OFFSET_MAX; //init the max offset
 
-	while (maskp >>= 1) {
+	while (maskp >>= BIT_SHIFT) { //finding the right offset
 		n--;
 	}
 
-	i = 10;
+	i = OFFSET_MAX; //init the max offset
 	maskp = mask;
-	while ((maskp = ((maskp << 1) & ALIEN_ROW_ALIVE))) {
+	while ((maskp = ((maskp << BIT_SHIFT) & ALIEN_ROW_ALIVE))) {//find the left offset
 		i--;
 	}
 	block.loffset = i * ALIEN_SEP;  //calculate the left offset
@@ -323,12 +334,12 @@ void update_bullets(void) {
 			//move the alien missile position up by 2 pixels
 			alien_missiles[i].pos.y = alien_missiles[i].pos.y + MOVE_SPRITE;
 			//check the guise of the alien missile
-			if (alien_missiles[i].state == 1)
+			if (alien_missiles[i].guise == GUISE_1)
 				//alternate the guise every movement
-				alien_missiles[i].state = 0;
+				alien_missiles[i].guise = GUISE_0;
 			else
 				//change the guise
-				alien_missiles[i].state = 1;
+				alien_missiles[i].guise = GUISE_1;
 			//if the alien missile exits the screen, allow it to be fired again
 			if (alien_missiles[i].pos.y >= GAME_HEIGHT) {
 				//allow for another alien missile

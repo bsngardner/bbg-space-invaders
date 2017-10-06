@@ -19,6 +19,8 @@ typedef enum {
 	LEFT, RIGHT		//directions that the aliens and tank move
 } direction;
 
+
+
 void game_controller_init(void); //starts up the game and initializes the key components
 void game_controller_run(void); //function that blocks on the user input and goes to correct function
 

@@ -28,10 +28,10 @@ int main() {
 	// Oscillate between frame 0 and frame 1.
 	// Just a cheap delay between frames.
 
-	game_controller_init();
+	game_controller_init(); //initialize the game
 	while (1) {
 
-		game_controller_run();
+		game_controller_run(); //run the game
 	}
 
 	cleanup_platform();

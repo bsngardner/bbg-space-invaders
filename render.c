@@ -77,10 +77,10 @@ void render_init() {
 
 	int row = 0, col = 0;
 	//Init screen to background color
-	for (row = 0; row < 480; row++) {
-		for (col = 0; col < 640; col++) {
-			frame0[row * 640 + col] = GAME_BACKGROUND;
-			frame1[row * 640 + col] = GAME_BACKGROUND;
+	for (row = 0; row < SCREEN_H; row++) {
+		for (col = 0; col < SCREEN_W; col++) {
+			frame0[row * SCREEN_W + col] = GAME_BACKGROUND;
+			frame1[row * SCREEN_W + col] = GAME_BACKGROUND;
 		}
 	}
 
