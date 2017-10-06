@@ -54,6 +54,7 @@ extern const u32 bmp_alien_missile_cross2_3x5[];
 extern const u32 bmp_alien_missile_diagonal1_3x5[];
 extern const u32 bmp_alien_missile_diagonal2_3x5[];
 extern const u32 bmp_bullet_straight_3x5[];
+extern const u32** bmp_alien_missiles[];
 
 // Shape of the entire bunker.
 extern const u32 bmp_bunker_24x18[];

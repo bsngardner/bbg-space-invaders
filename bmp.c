@@ -185,17 +185,37 @@ const u32 bmp_bunkerDamage4_6x6[] = { packword6(1, 1, 1, 1, 1, 1),
 				1, 1, 1, 1, 1), packword6(1, 1, 1, 1, 1, 1), packword6(1, 1, 1,
 				1, 1, 1) };
 
-const u32 bmp_alien_missile_cross2_3x5[] = { packword3(0, 1, 0), packword3(0, 1,
-		0), packword3(0, 1, 0), packword3(1, 1, 1), packword3(0, 1, 0) };
+const u32
+		bmp_alien_missile_cross2_3x5[] =
+				{ packword3(0, 1, 0), packword3(0, 1,
+						0), packword3(0, 1, 0), packword3(1, 1, 1),
+						packword3(0, 1, 0) };
 
-const u32 bmp_alien_missile_cross1_3x5[] = { packword3(0, 1, 0), packword3(1, 1,
-		1), packword3(0, 1, 0), packword3(0, 1, 0), packword3(0, 1, 0) };
+const u32
+		bmp_alien_missile_cross1_3x5[] =
+				{ packword3(0, 1, 0), packword3(1, 1,
+						1), packword3(0, 1, 0), packword3(0, 1, 0),
+						packword3(0, 1, 0) };
 
-const u32 bmp_alien_missile_diagonal1_3x5[] = { packword3(1, 0, 0), packword3(0, 1,
-		0), packword3(0, 0, 1), packword3(0, 1, 0), packword3(1, 0, 0) };
+const u32
+		bmp_alien_missile_diagonal1_3x5[] = { packword3(1, 0, 0),
+				packword3(0, 1,
+						0), packword3(0, 0, 1), packword3(0, 1, 0),
+				packword3(1, 0, 0) };
 
-const u32 bmp_alien_missile_diagonal2_3x5[] = { packword3(0, 0, 1), packword3(0, 1,
-		0), packword3(1, 0, 0), packword3(0, 1, 0), packword3(0, 0, 1) };
+const u32
+		bmp_alien_missile_diagonal2_3x5[] = { packword3(0, 0, 1),
+				packword3(0, 1,
+						0), packword3(1, 0, 0), packword3(0, 1, 0),
+				packword3(0, 0, 1) };
+
+const u32* bmp_alien_missiles_cross[] = { bmp_alien_missile_cross2_3x5,
+		bmp_alien_missile_cross1_3x5 };
+const u32* bmp_alien_missiles_diagonal[] = { bmp_alien_missile_diagonal1_3x5,
+		bmp_alien_missile_diagonal2_3x5 };
+const u32** bmp_alien_missiles[] = { bmp_alien_missiles_cross,
+		bmp_alien_missiles_diagonal };
 
 const u32 bmp_bullet_straight_3x5[] = { packword3(0, 1, 0), packword3(0, 1,
-		0), packword3(0, 1, 0), packword3(0, 1, 0), packword3(0, 1, 0), packword3(0, 1, 0) };
+		0), packword3(0, 1, 0), packword3(0, 1, 0), packword3(0, 1, 0),
+		packword3(0, 1, 0) };

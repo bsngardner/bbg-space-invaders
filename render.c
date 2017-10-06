@@ -15,6 +15,8 @@
 
 #include "vdma.h"
 #include "bmp.h"
+#include "table.h"
+#include "game_controller.h"
 
 #define BIT0 0x01
 
@@ -22,10 +24,13 @@
 #define COLOR_BLACK 0x00000000
 #define COLOR_WHITE 0x00FFFFFF
 #define GAME_BACKGROUND COLOR_BLACK
+#define BULLET_COLOR COLOR_WHITE
 
 #define FRAME_BUFFER_0_ADDR 0xC1000000  // Starting location in DDR where we will store the images that we display.
 static u32* frame0 = (u32*) FRAME_BUFFER_0_ADDR;
 static u32* frame1 = ((u32*) FRAME_BUFFER_0_ADDR) + SCREEN_H * SCREEN_W;
+
+//#define DEBUG
 
 //macros
 #define min(x,y) (((x)<(y))?(x):(y))
@@ -86,6 +91,8 @@ void render_init() {
 #define ALIENS_ROW4 4
 #define ALIENS_ROW5 5
 
+#define check(byte,bit) (byte&(table_bit[bit]))
+
 static void update_alien_row(alien_block_t* alien_block,
 		alien_block_t* prev_block, const u32* prev_alien, const u32* new_alien,
 		u16 row) {
@@ -111,12 +118,13 @@ static void update_alien_row(alien_block_t* alien_block,
 		u16 n;
 		for (n = ALIENS_START; n <= ALIENS_END; n++) {
 			x = prev_block->pos.x + n * ALIENS_SEPX;
-			if (alien_block->alien_status[n + row * ALIENS_ROW_LEN]) {
+			if (check(alien_block->alien_status[row],n)) {
 				set_delta = delta & ~prev;
 				reset_delta = delta & prev;
-			} else if (prev_block->alien_status[n + row * ALIENS_ROW_LEN]) {
-				reset_delta = prev;
-				set_delta = 0;
+			} else {
+				continue;
+				//				reset_delta = prev;
+				//				set_delta = 0;
 			}
 
 			while (set_delta || reset_delta) {
@@ -135,9 +143,12 @@ static void update_alien_row(alien_block_t* alien_block,
 	}
 }
 
+#define OOR -20000
+
 static void update_alien_block(alien_block_t* alien_block) {
-	static alien_block_t prev_block = { { -1, -1 }, { 0 } };
-	if (prev_block.pos.x < 0) {
+	static alien_block_t prev_block = { { OOR, OOR },
+			ALIEN_SEP * ALIEN_ROW_LEN, 0, { 0 }, OUT };
+	if (prev_block.pos.x == OOR) {
 		prev_block.pos.x = alien_block->pos.x - 1;
 		prev_block.pos.y = alien_block->pos.y;
 	}
@@ -164,68 +175,68 @@ static void update_alien_block(alien_block_t* alien_block) {
 		//Iterate through rows.
 
 		u16 x = prev_block.pos.x;
-		u16 n = ALIENS_ROW_LEN;
-		for (; n-- > 0;) {
-			if (prev_block.alien_status[n]) {
+		u16 n;
+		for (n = 0; n < ALIENS_ROW_LEN; n++) {
+			if (check(prev_block.alien_status[ALIENS_ROW0],n)) {
 				draw_bitmap(bmp_aliens[prev_block.legs][ALIENS_ROW0],
 						GAME_BACKGROUND, x,
 						prev_block.pos.y + ALIENS_ROW0 * ALIENS_SEPY,
 						BMP_ALIEN_W, BMP_ALIEN_H);
 			}
 			//Row 1
-			if (prev_block.alien_status[n]) {
+			if (check(prev_block.alien_status[ALIENS_ROW1],n)) {
 				draw_bitmap(bmp_aliens[prev_block.legs][ALIENS_ROW1],
 						GAME_BACKGROUND, x,
 						prev_block.pos.y + ALIENS_ROW1 * ALIENS_SEPY,
 						BMP_ALIEN_W, BMP_ALIEN_H);
 			}
-			if (alien_block->alien_status[n]) {
+			if (check(alien_block->alien_status[ALIENS_ROW0],n)) {
 				draw_bitmap(bmp_aliens[alien_block->legs][ALIENS_ROW0],
 						ALIEN_COLOR, x,
 						alien_block->pos.y + ALIENS_ROW0 * ALIENS_SEPY,
 						BMP_ALIEN_W, BMP_ALIEN_H);
 			}
 			//Row 2
-			if (prev_block.alien_status[n]) {
+			if (check(prev_block.alien_status[ALIENS_ROW2],n)) {
 				draw_bitmap(bmp_aliens[prev_block.legs][ALIENS_ROW2],
 						GAME_BACKGROUND, x,
 						prev_block.pos.y + ALIENS_ROW2 * ALIENS_SEPY,
 						BMP_ALIEN_W, BMP_ALIEN_H);
 			}
-			if (alien_block->alien_status[n]) {
+			if (check(alien_block->alien_status[ALIENS_ROW1],n)) {
 				draw_bitmap(bmp_aliens[alien_block->legs][ALIENS_ROW1],
 						ALIEN_COLOR, x,
 						alien_block->pos.y + ALIENS_ROW1 * ALIENS_SEPY,
 						BMP_ALIEN_W, BMP_ALIEN_H);
 			}
 			//Row 3
-			if (prev_block.alien_status[n]) {
+			if (check(prev_block.alien_status[ALIENS_ROW3],n)) {
 				draw_bitmap(bmp_aliens[prev_block.legs][ALIENS_ROW3],
 						GAME_BACKGROUND, x,
 						prev_block.pos.y + ALIENS_ROW3 * ALIENS_SEPY,
 						BMP_ALIEN_W, BMP_ALIEN_H);
 			}
-			if (alien_block->alien_status[n]) {
+			if (check(alien_block->alien_status[ALIENS_ROW2],n)) {
 				draw_bitmap(bmp_aliens[alien_block->legs][ALIENS_ROW2],
 						ALIEN_COLOR, x,
 						alien_block->pos.y + ALIENS_ROW2 * ALIENS_SEPY,
 						BMP_ALIEN_W, BMP_ALIEN_H);
 			}
 			//Row 4
-			if (prev_block.alien_status[n]) {
+			if (check(prev_block.alien_status[ALIENS_ROW4],n)) {
 				draw_bitmap(bmp_aliens[prev_block.legs][ALIENS_ROW4],
 						GAME_BACKGROUND, x,
 						prev_block.pos.y + ALIENS_ROW4 * ALIENS_SEPY,
 						BMP_ALIEN_W, BMP_ALIEN_H);
 			}
-			if (alien_block->alien_status[n]) {
+			if (check(alien_block->alien_status[ALIENS_ROW3],n)) {
 				draw_bitmap(bmp_aliens[alien_block->legs][ALIENS_ROW3],
 						ALIEN_COLOR, x,
 						alien_block->pos.y + ALIENS_ROW3 * ALIENS_SEPY,
 						BMP_ALIEN_W, BMP_ALIEN_H);
 			}
 			//Row 5
-			if (alien_block->alien_status[n]) {
+			if (check(alien_block->alien_status[ALIENS_ROW4],n)) {
 				draw_bitmap(bmp_aliens[alien_block->legs][ALIENS_ROW4],
 						ALIEN_COLOR, x,
 						alien_block->pos.y + ALIENS_ROW4 * ALIENS_SEPY,
@@ -236,6 +247,21 @@ static void update_alien_block(alien_block_t* alien_block) {
 
 	} else {
 		//blocks are the same
+		u16 i;
+		for (i = 0; i < ALIENS_ROW_COUNT; i++) {
+			//Assuming aliens only die and do not resurrect
+			u16 bit = prev_block.alien_status[i] ^ alien_block->alien_status[i];
+			u16 n = 0;
+			if (bit) {
+				while (bit >>= 1) {
+					n++;
+				}
+				draw_bitmap(bmp_aliens[prev_block.legs][i], GAME_BACKGROUND,
+						prev_block.pos.x + n * ALIENS_SEPX,
+						alien_block->pos.y + i * ALIENS_SEPY, BMP_ALIEN_W,
+						BMP_ALIEN_H);
+			}
+		}
 	}
 	memcpy(&prev_block, alien_block, sizeof(alien_block_t));
 }
@@ -331,42 +357,45 @@ static void update_bunkers(u16* bunkerStates) {
 	}
 }
 
-static void update_bullet(point_t* tankBulletPos) {
-
-	return;
+static void update_missiles(tank_t * tank, alien_missiles_t* alien_missiles) {
+	u16 py;
+	u16 n;
+	for (n = 0; n < MISSILES; n++) {
+		py = alien_missiles[n].pos.y - 2;
+		draw_bitmap(
+				bmp_alien_missiles[alien_missiles[n].type][!alien_missiles[n].state],
+				GAME_BACKGROUND, alien_missiles[n].pos.x, py, BMP_BULLET_W,
+				BMP_BULLET_H);
+		if (alien_missiles[n].active)
+			draw_bitmap(
+					bmp_alien_missiles[alien_missiles[n].type][alien_missiles[n].state],
+					BULLET_COLOR, alien_missiles[n].pos.x,
+					alien_missiles[n].pos.y, BMP_BULLET_W, BMP_BULLET_H);
+	}
+	py = tank->missile.pos.y + 2;
+	draw_bitmap(bmp_bullet_straight_3x5, GAME_BACKGROUND, tank->missile.pos.x,
+			py, BMP_BULLET_W, BMP_BULLET_H);
+	if (tank->missile.active)
+		draw_bitmap(bmp_bullet_straight_3x5, BULLET_COLOR, tank->missile.pos.x,
+				tank->missile.pos.y, BMP_BULLET_W, BMP_BULLET_H);
 }
 
-void render(point_t* tankPos, point_t* tankBulletPos, u8 tank_bullet_flag,
-		alien_block_t* alienBlock, alien_bullet_t* alienBullets,
-		u8* alien_missile_flag, u16* bunkerStates) {
+void render(tank_t* tank, alien_block_t* alienBlock,
+		alien_missiles_t* alien_missiles, u16* bunkerStates) {
 
 	update_alien_block(alienBlock);
 
-	update_tank(tankPos);
+	update_tank(&tank->pos);
+
+	update_missiles(tank, alien_missiles);
 
 	update_bunkers(bunkerStates);
 
-	if (tankBulletPos->y == (tankPos->y - BMP_BULLET_OFF) && tank_bullet_flag) {
-		const u32* bullet_bmp = bmp_bullet_straight_3x5;
-		draw_bitmap(bullet_bmp, COLOR_WHITE, tankBulletPos->x,
-				tankBulletPos->y, BMP_BULLET_W, BMP_BULLET_H);
-	}
-	u8 alien_missiles = 0;
-	for (alien_missiles; alien_missiles < BMP_MISSILES; alien_missiles++) {
-		xil_printf("\r\nMISSILES %d %d %d\r\n", alienBullets[alien_missiles].y,
-				alienBlock->pos.y + (ALIENS_SEPY + BMP_ALIEN_H) * 5,
-				alien_missile_flag[alien_missiles]);
-		if (alienBullets[alien_missiles].y == (alienBlock->pos.y
-				+ (BMP_ALIEN_H) * 9) && alien_missile_flag[alien_missiles]) {
-			const u32* alien_missile_bmp = bmp_alien_missile_cross2_3x5;
-			draw_bitmap(alien_missile_bmp, COLOR_WHITE,
-					alienBullets[alien_missiles].x,
-					alienBullets[alien_missiles].y, BMP_BULLET_W, BMP_BULLET_H);
-		}
-	}
 }
 
 static inline void set_point(s32 x, s32 y, u32 color) {
+	if (x < 0 || x >= GAME_W || y < 0 || y >= GAME_H)
+		return;
 	x *= 2;
 	y *= 2 * 640;
 	frame0[y + x] = color;
@@ -386,7 +415,6 @@ static void draw_bitmap(const u32* bmp, u32 color, s16 bmp_x, s16 bmp_y,
 		for (; bmp_row; bmp_row >>= 1) {
 			if (bmp_row & BIT0) {
 				set_point(x, y + bmp_y, color);
-			} else {
 			}
 			x++;
 		}

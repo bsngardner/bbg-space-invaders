@@ -27,8 +27,7 @@
 
 //Function prototypes
 void render_init();
-void render(point_t* tankPos, point_t* tankBulletPos, u8 tank_bullet_flag,
-		alien_block_t* alienBlock, alien_bullet_t* alienBullets, u8* alien_missile_flag,
-		u16* bunkerStates);
+void render(tank_t* tank, alien_block_t* alienBlock,
+		alien_missiles_t* alienBullets, u16* bunkerStates);
 
 #endif /* RENDER_H_ */
