@@ -418,13 +418,13 @@ static void update_missiles(tank_t * tank, alien_missiles_t* alien_missiles) {
 		py = alien_missiles[n].pos.y - MISSILE_SHIFT; //Previous missile was back a bit
 		//Clear old missile
 		draw_bitmap(
-				bmp_alien_missiles[alien_missiles[n].type][!alien_missiles[n].state],
+				bmp_alien_missiles[alien_missiles[n].type][!alien_missiles[n].guise],
 				GAME_BACKGROUND, alien_missiles[n].pos.x, py, BMP_BULLET_W,
 				BMP_BULLET_H);
 		//If active, draw new missile
 		if (alien_missiles[n].active)
 			draw_bitmap(
-					bmp_alien_missiles[alien_missiles[n].type][alien_missiles[n].state],
+					bmp_alien_missiles[alien_missiles[n].type][alien_missiles[n].guise],
 					BULLET_COLOR, alien_missiles[n].pos.x,
 					alien_missiles[n].pos.y, BMP_BULLET_W, BMP_BULLET_H);
 	}
