@@ -135,11 +135,11 @@ static void update_alien_row(alien_block_t* alien_block,
 			}
 
 			while (set_delta || reset_delta) { //Set pixels as long as there is something to change
-				if (check(set_delta, BIT0)) { //Read at bit0
+				if (check(set_delta, 0)) { //Read at bit0
 					set_point(x, y + alien_y, ALIEN_COLOR); //here y is global y of alien
 					// alien_y is local y of alien
 				}
-				if (check(reset_delta, BIT0)) { //Same as above
+				if (check(reset_delta, 0)) { //Same as above
 					clr_point (x,y + alien_y);
 				}
 
