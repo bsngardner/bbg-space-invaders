@@ -10,6 +10,8 @@
 
 
 #include "xil_types.h"
+#include "gpio.h"
+#include "timer.h"
 
 #define GAME_CONTROLLER_MISSILES 4		//number of missiles
 

@@ -129,15 +129,15 @@ void game_controller_run(void) {
 	direction tank_dir;
 	case READY:
 		if (debounce_cnt && !(--debounce_cnt)) {
-			if(currentButtonState & LEFT_BTN) {
+			if(button_state & LEFT_BTN) {
 				tank_state = MOVE;
 				tank_dir = LEFT;
 			}
-			else if(currentButtonState & RIGHT_BTN) {
+			else if(button_state & RIGHT_BTN) {
 				tank_state = MOVE;
 				tank_dir = RIGHT;
 			}
-			else if(currentButtonState & SHOOT_BTN) {
+			else if(button_state & SHOOT_BTN) {
 				tank_state = SHOOT;
 			}
 		}
