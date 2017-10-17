@@ -12,11 +12,16 @@
 #define DEBOUNCE_COUNT 5
 
 //Variables
-u32 debounce_cnt = 0;
+volatile u32 debounce_cnt = 0;
 volatile u32 timer_flag = 0;
+volatile u32 button_flag = 0;
 
 void timer_interrupt_handler() {
+	timer_flag = 1;
 
+	if (debounce_cnt && !(--debounce_cnt)) {
+		button_flag = 1;
+	}
 }
 
 void timer_set_debounce() {
