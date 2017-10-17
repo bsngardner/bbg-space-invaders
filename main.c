@@ -47,12 +47,13 @@ int main() {
 		while (timer_flag == 0) {
 			idle_count++;
 		}
+		timer_flag = 0;
 		if (idle_count > max_idle_count)
 			max_idle_count = idle_count;
 		if (idle_count < min_idle_count)
 			min_idle_count = idle_count;
-		avg_idle_count = (avg_idle_count - (avg_idle_count >> 3)) + (idle_count
-				>> 3);
+		avg_idle_count = (avg_idle_count - (avg_idle_count >> 2)) + (idle_count
+				>> 2);
 		//Tick state machines
 
 		game_controller_run(); //run the game
