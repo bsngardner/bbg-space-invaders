@@ -71,6 +71,9 @@
 #define TANK_BULL_Y 7		//bullet y offset for tank
 #define	TANK_BULL_X (19/2)-1 //bullet x offset for tank
 
+typedef enum { READY, SHOOT, MOVE} t_state;
+t_state tank_state;
+
 void move_tank(direction); //function that moves the tank
 void update_alien_position(void); //function that updates the alien block position
 void kill_alien(void); //function that queries the user for an alien to kill, then wipes it out
@@ -110,10 +113,47 @@ void game_controller_init(void) {
 		render(&tank, &block, &alien_missiles, bunker_states); // render the sprites
 	}
 	srand(time(0)); //random seed
+	tank_state = READY;
 }
+
+#define LEFT_BTN 0x08	//bit mask for left button
+#define SHOOT_BTN 0x01	//bit mask for shoot button
+#define RIGHT_BTN 0x02	//bit mask for right button
+#define DEBOUNCE_TIME 4 //40ms debounce time
+volatile u16 debounce_cnt = 0; //count variable for debouncing
 
 //function that blocks on the user input and goes to correct function handler
 void game_controller_run(void) {
+
+	switch (tank_state) {
+	direction tank_dir;
+	case READY:
+		if (debounce_cnt && !(--debounce_cnt)) {
+			if(currentButtonState & LEFT_BTN) {
+				tank_state = MOVE;
+				tank_dir = LEFT;
+			}
+			else if(currentButtonState & RIGHT_BTN) {
+				tank_state = MOVE;
+				tank_dir = RIGHT;
+			}
+			else if(currentButtonState & SHOOT_BTN) {
+				tank_state = SHOOT;
+			}
+		}
+		break;
+	case SHOOT:
+		fire_tank_bullet();
+		tank_state = READY;
+		break;
+
+	case MOVE:
+		move_tank(tank_dir);
+		tank_state = READY;
+		break;
+
+	}
+
 	char input; //wait for keyboard input from the user
 	input = getchar();
 	//switch statement for handling different keyboard presses
@@ -129,7 +169,7 @@ void game_controller_run(void) {
 		move_tank(LEFT); //move the tank to the left
 		break;
 	case KEY_5: //case for key 5
-		fire_tank_bullet(); //fire a tank bullet at the tank's current position
+		 //fire a tank bullet at the tank's current position
 		break;
 	case KEY_6: //case for key 6
 		move_tank(RIGHT); //move the tank to the right
