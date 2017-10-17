@@ -18,8 +18,8 @@
 //variables
 XGpio gpLED; // This is a handle for the LED GPIO block.
 XGpio gpPB; // This is a handle for the push-button GPIO block.
-u32 button_state = 0;
-
+volatile u32 button_state = 0;
+volatile u32 gpio_button_flag;
 void gpio_init() {
 	u32 success;
 	success = XGpio_Initialize(&gpPB, XPAR_PUSH_BUTTONS_5BITS_DEVICE_ID);

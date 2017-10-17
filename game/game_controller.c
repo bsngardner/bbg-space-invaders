@@ -14,6 +14,7 @@
 #include "render.h"
 #include "bmp.h"
 #include "table.h"
+#include "gpio.h"
 
 #define check(byte,bit) (byte & (table_bit[bit])) //checks to see if there is overlap in the alien bit table
 #define set(byte,bit) (byte |= (table_bit[bit])) //sets an alien in the bit table
@@ -119,16 +120,14 @@ void game_controller_init(void) {
 #define LEFT_BTN 0x08	//bit mask for left button
 #define SHOOT_BTN 0x01	//bit mask for shoot button
 #define RIGHT_BTN 0x02	//bit mask for right button
-#define DEBOUNCE_TIME 4 //40ms debounce time
-volatile u16 debounce_cnt = 0; //count variable for debouncing
-
+direction tank_dir;
 //function that blocks on the user input and goes to correct function handler
 void game_controller_run(void) {
 
 	switch (tank_state) {
-	direction tank_dir;
 	case READY:
-		if (debounce_cnt && !(--debounce_cnt)) {
+		if(gpio_button_flag) {
+			gpio_button_flag = 0;
 			if(button_state & LEFT_BTN) {
 				tank_state = MOVE;
 				tank_dir = LEFT;
@@ -154,8 +153,7 @@ void game_controller_run(void) {
 
 	}
 
-	char input; //wait for keyboard input from the user
-	input = getchar();
+	/*
 	//switch statement for handling different keyboard presses
 	switch (input) {
 	case KEY_2:	//case for key 2
@@ -188,6 +186,7 @@ void game_controller_run(void) {
 	default: //case for an invalid button press
 		break;
 	}
+	*/
 	render(&tank, &block, &alien_missiles, bunker_states); //render after button press
 }
 
@@ -203,6 +202,8 @@ direction alien_direction = RIGHT; //global variable that tracks direction of al
 //function that moves the tank
 void move_tank(direction d) {
 	//if the tank is moving left
+	xil_printf("COMPARE DIRECTIONS: %d %d\r\n", RIGHT, d);
+	xil_printf("COMPARE DIRECTIONS: %d %d\r\n", LEFT, d);
 	if (d == LEFT) {
 		//check to see if it has hit the edge
 		if (tank.pos.x >= MOVE_SPRITE)
@@ -212,6 +213,7 @@ void move_tank(direction d) {
 		if (tank.pos.x <= GAME_WIDTH - BMP_TANK_W - MOVE_SPRITE) //check to see if tank is moving off edge
 			tank.pos.x += MOVE_SPRITE; // move to the right
 	}
+	xil_printf("TANK POS: %d %d\r\n", tank.pos.x, tank.pos.y);
 }
 
 //function that updates the alien block position

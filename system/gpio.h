@@ -11,4 +11,7 @@
 void gpio_init();
 void gpio_interrupt_handler();
 
+extern volatile u32 gpio_button_flag;
+extern volatile u32 button_state;
+
 #endif /* GPIO_H_ */
