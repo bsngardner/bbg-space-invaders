@@ -23,6 +23,7 @@
 #include "timer.h"
 #include "render.h"
 #include "game_controller.h"
+#include "time_advance.h"
 
 //Variables
 u32 idle_count = 0;
@@ -55,8 +56,8 @@ int main() {
 		avg_idle_count = (avg_idle_count - (avg_idle_count >> 2)) + (idle_count
 				>> 2);
 		//Tick state machines
-
-		game_controller_run(); //run the game
+		time_advance_tick();
+		//		game_controller_run(); //run the game
 	}
 
 	cleanup_platform();
