@@ -71,11 +71,22 @@ enum {
 	READY, SHOOT, MOVE_LEFT, MOVE_RIGHT
 } tank_state = READY;
 
+//Prototypes
 void move_tank(direction); //function that moves the tank
 void init_bunker_states(void); //function that sets the bunker states to max health
 void tank_state_switch(void); //state machine for tank movement and shooting
 void fire_tank_bullet(void); //function that fires the tank bullet
-u16 detect_collision(u16 x, u16 y);
+
+static bool collision_detect(point_t pos1, point_t dim1, point_t pos2,
+		point_t dim2);
+static bool collision_detect_bmp(const u32* bmp1, point_t pos1, point_t dim1,
+		const u32* bmp2, point_t pos2, point_t dim2, const u32* bmp_mask);
+bool detect_bunker_collision(u16* bunker_num, u16* block_num,
+		point_t projectile_pos, const u32* bmp);
+
+//Const
+
+//Variables
 bunker_t bunkers[BUNKER_COUNT]; //array of 4 bunker states
 alien_missiles_t alien_missiles[GAME_CONTROLLER_MISSILES]; //array of 4 alien missiles
 //initialize the tank with a position and a bullet
@@ -187,6 +198,8 @@ void tank_state_switch(void) {
 	}
 }
 
+#define EMPTY_BLOCK1 9
+#define EMPTY_BLOCK2 10
 //function that sets the bunker states to max health
 void init_bunker_states(void) {
 	u8 i; //iterates through all the bunkers
@@ -194,7 +207,10 @@ void init_bunker_states(void) {
 	for (i = 0; i < BUNKER_COUNT; i++) {
 		bunkers[i].alive = 1; //set state to max
 		for (j = 0; j < BUNKER_BLOCK_COUNT; j++) {
-			bunkers[i].block[j].block_health = BUNKER_MAX;
+			if (j == EMPTY_BLOCK1 || j == EMPTY_BLOCK2)
+				bunkers[i].block[j].block_health = 0;
+			else
+				bunkers[i].block[j].block_health = BUNKER_MAX;
 		}
 	}
 }
@@ -370,13 +386,18 @@ void game_controller_update_bullet(void) {
 			//allow for another active bullet
 			tank.missile.active = 0;
 		}
-		if (render_detect_collision(bmp_bullet_straight_3x5,
-				tank.missile.pos.x, tank.missile.pos.y, BMP_BULLET_H)) {
-			print("Hit!");
+		u16 bunker_num;
+		u16 block_num;
+		if (detect_bunker_collision(&bunker_num, &block_num, tank.missile.pos,
+				bmp_bullet_straight_3x5)) {
+
+			print("Hit!\n\r");
 			tank.missile.active = 0;
+			bunkers[bunker_num].block[block_num].block_health--;
+			bunkers[bunker_num].block[block_num].changed = 1;
+			bunkers[bunker_num].changed = 1;
 		}
 	}
-
 }
 
 void game_controller_update_missiles(void) {
@@ -448,3 +469,97 @@ void erode_bunker(void) {
 		//erode the bunker in the bunker state array
 		bunkers[bunker_no].alive--;
 }
+
+bool detect_bunker_collision(u16* bunker_num, u16* block_num,
+		point_t projectile_pos, const u32* bmp) {
+
+	point_t bunker_pos = { .x = GAME_BUNKER_POS, .y = GAME_BUNKER_Y };
+	point_t block_pos;
+	//Iterate through bunkers, check for collision with each
+	for (u16 i = 0; i < GAME_BUNKER_COUNT; i++) {
+		//If collision with bunker detected
+		if (collision_detect(projectile_pos, bmp_missile_dim, bunker_pos,
+				bmp_bunker_dim)) {
+			//Iterate through blocks in bunker; once collision has been detected, return
+			for (u16 j = 0; j < GAME_BUNKER_BLOCK_COUNT; j++) {
+				//If block is already dead, dont check
+				if (bunkers[i].block[j].block_health == 0)
+					continue;
+
+				block_pos.x = bunker_pos.x + j % GAME_BUNKER_WIDTH;
+				block_pos.y = bunker_pos.y + j / GAME_BUNKER_WIDTH;
+				if (collision_detect_bmp(bmp, projectile_pos, bmp_missile_dim,
+						bmp_bunker_blocks[j], block_pos, bmp_bunker_block_dim,
+						bmp_bunker_damages[bunkers[i].block[j].block_health])) {
+					print("Hit block!\n\r");
+					*block_num = j;
+					*bunker_num = i;
+					return true;
+				}
+			}
+
+		}
+		bunker_pos.x += GAME_BUNKER_SEP;
+	}
+	return false;
+}
+
+static bool collision_detect(point_t pos1, point_t dim1, point_t pos2,
+		point_t dim2) {
+
+	s16 top1 = pos1.y;
+	s16 bottom2 = pos2.y + dim2.y;
+	if (top1 > bottom2) //first is below second
+		return false;
+	s16 bottom1 = pos1.y + dim1.y;
+	s16 top2 = pos2.y;
+	if (top2 > bottom1) //first is above second
+		return false;
+	s16 left1 = pos1.x;
+	s16 right2 = pos2.x + dim2.x;
+	if (left1 > right2) //first is right of second
+		return false;
+	s16 right1 = pos1.x + dim1.x;
+	s16 left2 = pos2.x;
+	if (left2 > right1) //first is left of second
+		return false;
+	return true;
+}
+
+static bool collision_detect_bmp(const u32* bmp1, point_t pos1, point_t dim1,
+		const u32* bmp2, point_t pos2, point_t dim2, const u32* bmp_mask) {
+	if (!collision_detect(pos1, dim1, pos2, dim2))
+		return false;
+
+	u16 shift1 = 0;
+	u16 shift2 = 0;
+	u16 y1 = 0;
+	u16 y2 = 0;
+	u16 count;
+	u32 bmp_row1;
+	u32 bmp_row2;
+
+	if (pos1.x < pos2.x) {
+		shift1 = pos2.x - pos1.x;
+	} else {
+		shift2 = pos1.x - pos2.x;
+	}
+	if (pos1.y < pos2.y) {
+		y1 = pos2.y - pos1.y;
+		count = dim1.y - y1;
+	} else {
+		y2 = pos1.y - pos2.y;
+		count = dim2.y - y2;
+	}
+
+	while (count-- > 0) {
+		bmp_row1 = bmp1[y1];
+		bmp_row2 = bmp2[y2];
+		if (bmp_mask)
+			bmp_row2 &= bmp_mask[y2];
+		if ((bmp_row1 >> shift1) & (bmp_row2 >> shift2))
+			return true;
+	}
+	return false;
+}
+

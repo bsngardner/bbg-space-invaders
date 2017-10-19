@@ -12,6 +12,7 @@
 #define BMP_H_
 
 #include "xil_types.h"
+#include "game.h"
 
 //Defines for bitmap sizes
 #define BMP_BUNKER_H 18
@@ -43,6 +44,11 @@
 //Function prototypes
 
 //Externs
+extern const point_t bmp_tank_dim;
+extern const point_t bmp_alien_dim;
+extern const point_t bmp_bunker_dim;
+extern const point_t bmp_bunker_block_dim;
+extern const point_t bmp_missile_dim;
 
 // Must define packword for each of the different bit-widths.
 extern const u32* bmp_aliens_out[];
