@@ -62,6 +62,8 @@ extern const u32 bmp_alien_bottom_out_12x8[];
 extern const u32 bmp_alien_empty[];
 
 extern const u32 bmp_tank_15x8[];
+extern const u32 bmp_tank_explode1_15x8[];
+extern const u32 bmp_tank_explode2_15x8[];
 
 extern const u32 bmp_alien_missile_cross1_3x5[];
 extern const u32 bmp_alien_missile_cross2_3x5[];

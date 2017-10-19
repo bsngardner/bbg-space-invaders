@@ -27,9 +27,12 @@ typedef struct {
 	s16 y;
 } point_t;
 
+
+
 //Tank struct, contains missile
 typedef struct {
 	point_t pos;
+	enum { ALIVE=0, EXPLODE_1=1, EXPLODE_2=2, RESET=3} state;
 	struct {
 		point_t pos;
 		u8 active;
@@ -39,6 +42,7 @@ typedef struct {
 typedef struct {
 	point_t pos;
 	u8 active;
+	u8 alive;
 } saucer_t;
 
 //Alien missile type

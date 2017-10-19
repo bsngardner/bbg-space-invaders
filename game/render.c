@@ -95,6 +95,8 @@ static void update_score(u32 score);
 
 //Static variables
 static bunker_t prev_bunkers[GAME_BUNKER_COUNT];
+static point_t prev_tank_block = { RENDER_TANK_X, RENDER_TANK_Y };
+static point_t prev_saucer_block = { SAUCER_X, SAUCER_Y };
 
 u32* getFrame() {
 	return frame0;
@@ -106,7 +108,6 @@ void render_init() {
 	// Just paint some large red, green, blue, and white squares in different
 	// positions of the image for each frame in the buffer (framePointer0 and framePointer1).
 	const u32* bunker_bmp = bmp_bunker_24x18;
-	const u32* tank_bmp = bmp_tank_15x8;
 
 	int row = 0, col = 0;
 	//Init screen to background color
@@ -128,12 +129,10 @@ void render_init() {
 
 	//Draw tank TODO this should not happen until the controller calls
 	//	render the first time
-	draw_bitmap(tank_bmp, COLOR_GREEN, RENDER_TANK_X, RENDER_TANK_Y,
-			BMP_TANK_W, BMP_TANK_H);
+	render_tank();
 
 	//Draw Red Saucer
-	draw_bitmap(saucer_16x7, COLOR_RED, SAUCER_X, SAUCER_Y, SAUCER_WIDTH,
-			SAUCER_HEIGHT);
+	render_saucer();
 
 	//Draw little tanks for score
 	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, TANK_LIFE_1, TOP_SCREEN, TANK_WIDTH, TANK_HEIGHT);
@@ -190,9 +189,9 @@ static void update_score(u32 score) {
 		prev_numbers[NUMBER_1] = ten;
 	}
 }
-#define GAME_X 130
-#define GAME_Y 120
-#define OVER_X 160
+#define GAME_X 130 //start x pos for game word
+#define GAME_Y 120 //start y pos
+#define OVER_X 160 //start x pos for over word
 void render_game_over(void) {
 	draw_bitmap(word_game_27x8, COLOR_WHITE, GAME_X, GAME_Y, WORDS_W, WORDS_H);
 	draw_bitmap(word_over_27x8, COLOR_WHITE, OVER_X, GAME_Y, WORDS_W, WORDS_H);
@@ -200,6 +199,59 @@ void render_game_over(void) {
 	input = getchar();
 }
 
+void render_tank(void) {
+	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, RENDER_TANK_X, RENDER_TANK_Y,
+				BMP_TANK_W, BMP_TANK_H);
+	point_t tank_block = { RENDER_TANK_X, RENDER_TANK_Y };
+	memcpy(&prev_tank_block, &tank_block, sizeof(point_t));
+}
+
+void render_saucer(void) {
+	draw_bitmap(saucer_16x7, COLOR_RED, SAUCER_X, SAUCER_Y, SAUCER_WIDTH,
+				SAUCER_HEIGHT);
+	point_t saucer_block = { SAUCER_X, SAUCER_Y };
+	memcpy(&prev_saucer_block, &saucer_block, sizeof(point_t));
+}
+
+void render_saucer_death(u16 x, u16 y) {
+	xil_printf("POSITION %d %d\r\n", x, y);
+	draw_bitmap(saucer_16x7, COLOR_BLACK, x, y, SAUCER_WIDTH,
+				SAUCER_HEIGHT);
+}
+
+void render_saucer_points(u16 x, u16 y, u16 points, u8 on) {
+	u32 color;
+	if(on)
+		color = COLOR_WHITE;
+	else
+		color = COLOR_BLACK;
+
+	u32 hundred = (points) / HUNDRED;
+	u32 ten = (points-hundred*HUNDRED) / TEN;
+	u16 offset = BMP_NUMBER_W + NUMBER_2;
+	if(hundred!=0) {
+		draw_bitmap(bmp_numbers[hundred], color, x, y, BMP_NUMBER_W, BMP_NUMBER_H);
+	}
+	draw_bitmap(bmp_numbers[ten], color, x + offset, y, BMP_NUMBER_W, BMP_NUMBER_H);
+	draw_bitmap(bmp_numbers[ten], color, x + offset + offset, y, BMP_NUMBER_W, BMP_NUMBER_H);
+}
+
+void render_explosion_1(u16 x, u16 y) {
+	xil_printf("EXPLODE ONCE %d %d\r\n", x,y);
+	draw_bitmap(bmp_tank_15x8, COLOR_BLACK, x, y, BMP_TANK_W, BMP_TANK_H);
+	draw_bitmap(bmp_tank_explode1_15x8, COLOR_GREEN, x, y, BMP_TANK_W, BMP_TANK_H);
+}
+
+void render_explosion_2(u16 x, u16 y) {
+	xil_printf("EXPLODE TWICE %d %d\r\n", x,y);
+	draw_bitmap(bmp_tank_explode1_15x8, COLOR_BLACK, x, y, BMP_TANK_W, BMP_TANK_H);
+	draw_bitmap(bmp_tank_explode2_15x8, COLOR_GREEN, x, y, BMP_TANK_W, BMP_TANK_H);
+}
+
+void render_explosion_3(u16 x, u16 y) {
+	xil_printf("EXPLODE THREE %d %d\r\n", x,y);
+	draw_bitmap(bmp_tank_explode2_15x8, COLOR_BLACK, x, y, BMP_TANK_W, BMP_TANK_H);
+}
 //Updates alien row when shifted, no more than 2. This limitation is from the
 //	padding I could put on the bitmaps.  There is are 2 pixels on either side
 //	of the bitmaps that are 0, so shifting further would cause broken sprites.
@@ -411,7 +463,7 @@ static void update_alien_block(alien_block_t* alien_block) {
 static void update_tank(point_t* tank_block) {
 	//Tank is initially drawn in init, so prev_tank can be initialized to
 	//	 the start location of the tank
-	static point_t prev_tank_block = { RENDER_TANK_X, RENDER_TANK_Y };
+
 	const u32* tank_bmp = bmp_tank_15x8; //Get tank bitmap
 	u16 y = tank_block->y; //This doesnt change
 	u16 tank_y; //This does, as we move down each pixel row in the tank
@@ -457,7 +509,7 @@ static void update_tank(point_t* tank_block) {
 static void update_saucer(point_t* saucer_block) {
 	//saucer is initially drawn in init, so prev_saucer can be initialized to
 	//	 the start location of the saucer
-	static point_t prev_saucer_block = { SAUCER_X, SAUCER_Y };
+
 	const u32* saucer_bmp = bmp_saucer_16x7; //Get saucer bitmap
 	u16 y = saucer_block->y; //This doesnt change
 	u16 saucer_y; //This does, as we move down each pixel row in the saucer
@@ -617,8 +669,8 @@ void render(tank_t* tank, alien_block_t* alienBlock,
 		u8* tank_lives, u32 score) {
 
 	update_alien_block(alienBlock);
-
-	update_tank(&tank->pos);
+	if(!game_controller_tank_life())
+		update_tank(&tank->pos);
 
 	update_missiles(tank, alien_missiles);
 

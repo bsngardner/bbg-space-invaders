@@ -33,4 +33,8 @@ void game_controller_erode_bunker(void); //function that updates (erodes) the st
 void game_controller_move_saucer(void); //move the flying saucer
 u8 game_controller_saucer_state(void);
 void game_controller_saucer_state_toggle(void);
+u8 game_controller_tank_life(void);
+void game_controller_explode_(void);
+u8 game_controller_saucer_life(void);
+void game_controller_saucer_explode(void);
 #endif /* GAME_CONTROLLER_H_ */

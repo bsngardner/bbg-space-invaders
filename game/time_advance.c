@@ -17,7 +17,9 @@ static enum {
 	UPDATE_BULLET = 3, //move bullet
 	UPDATE_MISSILES = 4, //move missiles
 	MOVE_SAUCER = 5, //move saucer
-	FIRE_MISSILE = 6 //shoot alien missile
+	FIRE_MISSILE = 6, //shoot alien missile
+	EXPLODE_TANK = 7,
+	KILL_SAUCER = 8
 } state = RESET; //enum for declaring the states
 
 #define ALIEN_PERIOD 16 //freqeuency of alien movement
@@ -27,6 +29,9 @@ static enum {
 #define SAUCER_INIT 500 //initial frequency of saucer
 #define ALIEN_MISS_PERIOD 75 //frequency of alien missile shooting
 #define ALIEN_MISS_INIT 400 //initial frequency of alien missile shooting
+#define EXPLODE_PERIOD 10
+#define EXPLODE_WAIT 25
+#define SAUCER_KILL_PERIOD 15
 
 u32 saucer_pause(); //randomly generate a pause for the saucer
 
@@ -38,6 +43,8 @@ void time_advance_tick() {
 	static u32 missile_period = MISSILE_PERIOD; //missile move
 	static u32 saucer_period = SAUCER_INIT; //saucer move
 	static u32 alien_miss_period = ALIEN_MISS_INIT; //missile shoot
+	static u32 explode_period = EXPLODE_PERIOD;
+	static u32 saucer_kill_period = SAUCER_KILL_PERIOD;
 
 	//State actions
 	switch (state) {
@@ -52,8 +59,12 @@ void time_advance_tick() {
 			missile_period--;
 		if (saucer_period) //saucer timer
 			saucer_period--;
+		if (saucer_kill_period) //saucer timer
+			saucer_kill_period--;
 		if (alien_miss_period) //missile shooting timer
 			alien_miss_period--;
+		if (explode_period)
+			explode_period--;
 		break;
 	case ADVANCE_ALIENS:
 		//call advance aliens function
@@ -69,14 +80,23 @@ void time_advance_tick() {
 		break;
 	case MOVE_SAUCER:
 		//check to see if the saucer is active
+		if(game_controller_saucer_life()) {
 		if(game_controller_saucer_state()) {
 			game_controller_move_saucer(); //if active then move
 		} else
 			game_controller_saucer_state_toggle(); //else toggle to active
+		}
 		break;
 	case FIRE_MISSILE:
 		//fire an alien missile
 		game_controller_fire_alien_missile();
+		break;
+	case EXPLODE_TANK:
+		if(game_controller_tank_life())
+			game_controller_explode(game_controller_tank_life());
+		break;
+	case KILL_SAUCER:
+		game_controller_saucer_explode();
 		break;
 	}
 
@@ -96,6 +116,10 @@ void time_advance_tick() {
 			state = UPDATE_BULLET; //priority level 4
 		} else if (alien_miss_period == 0) {
 			state = FIRE_MISSILE; //priority level 5
+		} else if (explode_period == 0) {
+			state = EXPLODE_TANK;
+		} else if (saucer_kill_period == 0) {
+			state = KILL_SAUCER;
 		}
 		break;
 	case ADVANCE_ALIENS:
@@ -121,6 +145,17 @@ void time_advance_tick() {
 	case FIRE_MISSILE:
 		alien_miss_period = ALIEN_MISS_PERIOD; //reset alien missile shooting timer
 		state = IDLE; //move back to idle
+		break;
+	case EXPLODE_TANK:
+		if(game_controller_tank_life())
+			explode_period = EXPLODE_WAIT;
+		else
+			explode_period = EXPLODE_PERIOD;
+		state = IDLE;
+		break;
+	case KILL_SAUCER:
+		saucer_kill_period = SAUCER_KILL_PERIOD;
+		state = IDLE;
 		break;
 	}
 

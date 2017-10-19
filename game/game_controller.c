@@ -77,12 +77,13 @@ void init_bunker_states(void); //function that sets the bunker states to max hea
 void tank_state_switch(void); //state machine for tank movement and shooting
 void fire_tank_bullet(void); //function that fires the tank bullet
 void update_tank_lives(void);
+void kill_saucer(void);
 u16 detect_collision(u16 x, u16 y);
 bunker_t bunkers[BUNKER_COUNT]; //array of 4 bunker states
 alien_missiles_t alien_missiles[GAME_CONTROLLER_MISSILES]; //array of 4 alien missiles
 //initialize the tank with a position and a bullet
-tank_t tank = { { TANK_X, TANK_Y }, { { BULLET_POS, BULLET_POS }, 0 } };
-saucer_t saucer = { {SAUCER_X, SAUCER_Y}, 0};
+tank_t tank = { { TANK_X, TANK_Y }, 0, { { BULLET_POS, BULLET_POS }, 0 } };
+saucer_t saucer = { {SAUCER_X, SAUCER_Y}, 0, 1};
 //initialize the alien block with a position and flags
 alien_block_t block = { { ALIEN_X, ALIEN_Y }, 0, 0, { 0 }, OUT };
 u8 tank_lives[LIFE_COUNT] = {1,1,1};
@@ -101,6 +102,7 @@ void game_controller_init(void) {
 		block.alien_status[i] = ALIEN_ROW_ALIVE; //set all aliens to alive
 	}
 	render(&tank, &block, &alien_missiles, bunkers, &saucer, tank_lives, game_score); //render the sprites
+
 	for (; i < INITIAL_MOVES; i++) { //render six times
 		while (init_timer) //cycle through the timer
 			init_timer--; // Decrement the timer.
@@ -205,6 +207,29 @@ void move_tank(direction d) {
 		game_score = 0;
 }
 
+void game_controller_explode(u8 state) {
+	if (state == EXPLODE_1) {
+		render_explosion_1(tank.pos.x, tank.pos.y);
+		tank.state = EXPLODE_2;
+	} else if (state == EXPLODE_2) {
+		render_explosion_2(tank.pos.x, tank.pos.y);
+		tank.state = RESET;
+	} else if (state == RESET) {
+		render_explosion_3(tank.pos.x, tank.pos.y);
+		tank.pos.x = TANK_X;
+		tank.pos.y = TANK_Y;
+		render_tank();
+		tank.state = ALIVE;
+		tank.missile.active = 0;
+		tank.missile.pos.x = BULLET_POS;
+		tank.missile.pos.y = BULLET_POS;
+	}
+}
+
+u8 game_controller_tank_life(void) {
+	return tank.state;
+}
+
 //function that updates the alien block position
 void game_controller_update_alien_position(void) {
 
@@ -293,7 +318,7 @@ void fire_tank_bullet(void) {
 		//set the bullet to active
 		tank.missile.active = 1;
 	}
-	update_tank_lives();
+	kill_saucer();
 }
 //function that fires the alien missiles
 void game_controller_fire_alien_missile(void) {
@@ -418,7 +443,30 @@ void game_controller_move_saucer(void) {
 	}
 }
 
+void kill_saucer()
+{
+	saucer.alive = 0;
+	saucer.active = 0;
+}
 
+#define MAX_RAND 9
+#define MIN_SCORE 50
+void game_controller_saucer_explode(void) {
+	if(!saucer.alive) {
+		render_saucer_death(saucer.pos.x, saucer.pos.y);
+		u32 points = ((rand() % MAX_RAND) * MIN_SCORE) + MIN_SCORE;
+		game_score+= points;
+		saucer.alive = 1;
+		saucer.active = 0;
+		saucer.pos.x = SAUCER_X;
+		saucer.pos.y = SAUCER_Y;
+		render_saucer();
+	}
+}
+
+u8 game_controller_saucer_life(void) {
+	return saucer.alive;
+}
 //return the saucer state
 u8 game_controller_saucer_state(void) {
 	return saucer.active;
@@ -436,6 +484,7 @@ void update_tank_lives(void) {
 	for(;lives-- > 0;) { //iterate over the lives in the array
 		if(tank_lives[lives]) {
 			tank_lives[lives] = 0; //change the first one to a zero
+			tank.state = 1;
 			break; //stop checking
 		}
 	}
