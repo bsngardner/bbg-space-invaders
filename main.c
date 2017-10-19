@@ -38,8 +38,8 @@ u32 max_avg_util = 0;
 void interrupt_init();
 void interrupt_handler_dispatcher();
 
-//#define DEBUG
-//#define PRINT_UTIL
+#define DEBUG
+#define PRINT_UTIL
 void print(char *str);
 void init();
 

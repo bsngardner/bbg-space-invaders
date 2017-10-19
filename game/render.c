@@ -33,6 +33,9 @@
 #define BUNKER_ROWS 3	//Bunker dimensions in blocks
 #define BUNKER_COLS 4
 
+#define SCREEN_H 480
+#define SCREEN_W 640
+
 #define ALIENS_SEPX (BMP_ALIEN_W)	//Horizontal separation between aliens
 #define ALIENS_SEPY (BMP_ALIEN_W-2)	//Separation between aliens vertically
 #define ALIENS_START 0
@@ -49,14 +52,29 @@
 #define ALIENS_ROW5 5	//This row only exists when shifting down
 #define SAUCER_WIDTH 16
 #define SAUCER_HEIGHT 7
+#define SAUCER_X 321 //x position of saucer starts off the screen
+#define SAUCER_Y 15 //y position of saucer
+#define SCORE_X 20 //x pos of score
+#define LIVES_X 200 //x pos of lives
+#define TANK_LIFE_1 230 //x pos of first life
+#define TANK_LIFE_2 250 //x pos of second life
+#define TANK_LIFE_3 270 //x pos of third life
+#define TANK_SPACE 20 //gap between tanks
+#define TOP_SCREEN 1 //y pos of all top of screen sprites
+#define SCORE_GAP_1 6
+#define SCORE_GAP_2 11
+#define SCORE_GAP_3 16
+#define SCORE_GAP_4 21
 
-#define TANK_HEIGHT 8
-#define TANK_WIDTH 15
+#define TANK_HEIGHT 8 //tank sprite height
+#define TANK_WIDTH 15 //tank sprite width
+
+#define WORDS_W 25 //word sprite width
+#define WORDS_H 8 //word sprite height
 
 #define FRAME_BUFFER_0_ADDR 0xC1000000  // Starting location in DDR where we will store the images that we display.
 static u32* frame0 = (u32*) FRAME_BUFFER_0_ADDR;
-static u32* frame1 = ((u32*) FRAME_BUFFER_0_ADDR) + GAME_SCREEN_H
-		* GAME_SCREEN_W;//Maybe use this later?
+static u32* frame1 = ((u32*) FRAME_BUFFER_0_ADDR) + SCREEN_H * SCREEN_W;//Maybe use this later?
 
 //#define DEBUG
 
@@ -70,6 +88,7 @@ static void draw_bitmap(const u32* bmp, u32 color, s16 bmp_x, s16 bmp_y,
 		s16 bmp_w, s16 bmp_h);
 static inline void set_point(s32 x, s32 y, u32 color);
 static void drawGreenLine(void);
+static void update_score(u32 score);
 
 //Macros
 #define clr_point(x,y) set_point((x),(y),GAME_BACKGROUND)
@@ -80,7 +99,8 @@ static bunker_t prev_bunkers[GAME_BUNKER_COUNT];
 u32* getFrame() {
 	return frame0;
 }
-
+#define NUMS 4
+u32 prev_numbers[NUMS];
 void render_init() {
 	vdma_init(frame0, frame1);
 	// Just paint some large red, green, blue, and white squares in different
@@ -90,10 +110,10 @@ void render_init() {
 
 	int row = 0, col = 0;
 	//Init screen to background color
-	for (row = 0; row < GAME_SCREEN_H; row++) {
-		for (col = 0; col < GAME_SCREEN_W; col++) {
-			frame0[row * GAME_SCREEN_W + col] = GAME_BACKGROUND;
-			frame1[row * GAME_SCREEN_W + col] = GAME_BACKGROUND;
+	for (row = 0; row < SCREEN_H; row++) {
+		for (col = 0; col < SCREEN_W; col++) {
+			frame0[row * SCREEN_W + col] = GAME_BACKGROUND;
+			frame1[row * SCREEN_W + col] = GAME_BACKGROUND;
 		}
 	}
 
@@ -112,22 +132,72 @@ void render_init() {
 			BMP_TANK_W, BMP_TANK_H);
 
 	//Draw Red Saucer
-	draw_bitmap(saucer_16x7, COLOR_RED, 321, 15, SAUCER_WIDTH,
+	draw_bitmap(saucer_16x7, COLOR_RED, SAUCER_X, SAUCER_Y, SAUCER_WIDTH,
 			SAUCER_HEIGHT);
 
 	//Draw little tanks for score
-	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, 260, 1, TANK_WIDTH, TANK_HEIGHT);
-	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, 280, 1, TANK_WIDTH, TANK_HEIGHT);
-	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, 300, 1, TANK_WIDTH, TANK_HEIGHT);
+	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, TANK_LIFE_1, TOP_SCREEN, TANK_WIDTH, TANK_HEIGHT);
+	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, TANK_LIFE_2, TOP_SCREEN, TANK_WIDTH, TANK_HEIGHT);
+	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, TANK_LIFE_3, TOP_SCREEN, TANK_WIDTH, TANK_HEIGHT);
 
 	//Draw Score
-	draw_bitmap(word_score_27x8, COLOR_WHITE, 20, 1, 25, 8);
+	draw_bitmap(word_score_27x8, COLOR_WHITE, SCORE_X, TOP_SCREEN, WORDS_W, WORDS_H);
+	u32 offset = WORDS_W + SCORE_X;
+	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_1, TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
+	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_2, TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
+	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_3, TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
+	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_4, TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
 
 	//Draw Live
-	draw_bitmap(word_lives_27x8, COLOR_WHITE, 220, 1, 25, 8);
+	draw_bitmap(word_lives_27x8, COLOR_WHITE, LIVES_X, TOP_SCREEN, WORDS_W, WORDS_H);
 
+	//Draw green line
 	drawGreenLine();
 
+}
+#define NUMBER_1 1
+#define NUMBER_2 2
+#define NUMBER_3 3
+#define THOUSAND 1000
+#define HUNDRED 100
+#define TEN 10
+static void update_score(u32 score) {
+
+	u32 thousand = score / THOUSAND;
+	u32 hundred = (score-thousand*THOUSAND) / HUNDRED;
+	u32 ten = (score-thousand*THOUSAND-hundred*HUNDRED) / TEN;
+
+	u32 offset = WORDS_W + SCORE_X;
+	if (prev_numbers[NUMBER_3] != thousand) {
+		draw_bitmap(bmp_numbers[prev_numbers[NUMBER_3]], COLOR_BLACK,
+				offset + SCORE_GAP_1, TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
+		draw_bitmap(bmp_numbers[thousand], COLOR_GREEN, offset + SCORE_GAP_1,
+				TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
+		prev_numbers[NUMBER_3] = thousand;
+	}
+	if (prev_numbers[NUMBER_2] != hundred) {
+		draw_bitmap(bmp_numbers[prev_numbers[NUMBER_2]], COLOR_BLACK,
+				offset + SCORE_GAP_2, TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
+		draw_bitmap(bmp_numbers[hundred], COLOR_GREEN, offset + SCORE_GAP_2,
+				TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
+		prev_numbers[NUMBER_2] = hundred;
+	}
+	if (prev_numbers[NUMBER_1] != ten) {
+		draw_bitmap(bmp_numbers[prev_numbers[NUMBER_1]], COLOR_BLACK,
+				offset + SCORE_GAP_3, TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
+		draw_bitmap(bmp_numbers[ten], COLOR_GREEN, offset + SCORE_GAP_3,
+				TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
+		prev_numbers[NUMBER_1] = ten;
+	}
+}
+#define GAME_X 130
+#define GAME_Y 120
+#define OVER_X 160
+void render_game_over(void) {
+	draw_bitmap(word_game_27x8, COLOR_WHITE, GAME_X, GAME_Y, WORDS_W, WORDS_H);
+	draw_bitmap(word_over_27x8, COLOR_WHITE, OVER_X, GAME_Y, WORDS_W, WORDS_H);
+	char input;
+	input = getchar();
 }
 
 //Updates alien row when shifted, no more than 2. This limitation is from the
@@ -527,9 +597,24 @@ static void update_missiles(tank_t * tank, alien_missiles_t* alien_missiles) {
 				tank->missile.pos.y, BMP_BULLET_W, BMP_BULLET_H);
 }
 
+#define LIFE_COUNT 3 //number of tank lives
+void update_tank_life_draw(u8* tank_lives) {
+	u8 lives;
+	u16 offset; //create the offset for the tanks
+	for(lives=0;lives<LIFE_COUNT;lives++) {
+		offset = TANK_LIFE_1 + lives * TANK_SPACE; //calc x pos offset
+		if(!tank_lives[lives]) { //if the tank is dead
+			//draw black
+			draw_bitmap(bmp_tank_15x8, COLOR_BLACK, offset, TOP_SCREEN, TANK_WIDTH, TANK_HEIGHT);
+			break;
+		}
+	}
+}
+
 //Externally accessible render function. Calls local functions to render graphics
 void render(tank_t* tank, alien_block_t* alienBlock,
-		alien_missiles_t* alien_missiles, bunker_t* bunkers, saucer_t* saucer) {
+		alien_missiles_t* alien_missiles, bunker_t* bunkers, saucer_t* saucer,
+		u8* tank_lives, u32 score) {
 
 	update_alien_block(alienBlock);
 
@@ -540,6 +625,10 @@ void render(tank_t* tank, alien_block_t* alienBlock,
 	update_bunkers(bunkers);
 
 	update_saucer(&saucer->pos);
+
+	update_tank_life_draw(tank_lives);
+
+	update_score(score);
 }
 
 #define RES_SCALE 2
@@ -549,11 +638,11 @@ static inline void set_point(s32 x, s32 y, u32 color) {
 		return; //IF coordinates are outside bounds, do not draw
 	//Scale x and y to screen coordinates
 	x *= RES_SCALE;
-	y *= RES_SCALE * GAME_SCREEN_W;
+	y *= RES_SCALE * SCREEN_W;
 	//Draw 2x2 game pixel
 	frame0[y + x] = color;
 	frame0[y + x + 1] = color;
-	y += GAME_SCREEN_W;
+	y += SCREEN_W;
 	frame0[y + x] = color;
 	frame0[y + x + 1] = color;
 }
@@ -588,3 +677,31 @@ static void drawGreenLine() {
 		}
 	}
 }
+
+static bool check_point(s16 x, s16 y) {
+	if (x < 0 || x >= GAME_W || y < 0 || y >= GAME_H)
+		return false; //IF coordinates are outside bounds, do not draw
+	//Scale x and y to screen coordinates
+	s16 lx = x * RES_SCALE;
+	s16 ly = y * RES_SCALE * SCREEN_W;
+	u32 framepoint = frame0[lx + ly];
+	xil_printf("Point hit: (%d,%d) %08x\n\r", x, y, framepoint);
+	return !!frame0[lx + ly];
+}
+
+bool render_detect_collision(const u32* bmp, s16 x, s16 y, u16 h) {
+	u16 local_y = h;
+	u16 local_x;
+	while (local_y-- > 0) {
+		local_x = x;
+		u32 bmp_row = bmp[local_y];
+		for (; bmp_row; bmp_row >>= 1) {
+			if ((bmp_row & BIT0) && check_point(local_x, local_y + y)) {
+				return true;
+			}
+			local_x++;
+		}
+	}
+	return false;
+}
+

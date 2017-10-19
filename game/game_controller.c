@@ -64,29 +64,20 @@
 #define TANK_Y GAME_HEIGHT*7/8	//starting y location of the tank
 #define TANK_BULL_Y 7		//bullet y offset for tank
 #define	TANK_BULL_X (19/2)-1 //bullet x offset for tank
-#define SAUCER_X 321
-#define SAUCER_Y 15
+#define SAUCER_X 321 //starting x position
+#define SAUCER_Y 15 //starting y position
+#define LIFE_COUNT 3 //initial tank lives
 
 enum {
 	READY, SHOOT, MOVE_LEFT, MOVE_RIGHT
 } tank_state = READY;
 
-//Prototypes
 void move_tank(direction); //function that moves the tank
 void init_bunker_states(void); //function that sets the bunker states to max health
 void tank_state_switch(void); //state machine for tank movement and shooting
 void fire_tank_bullet(void); //function that fires the tank bullet
-
-static bool collision_detect(point_t pos1, point_t dim1, point_t pos2,
-		point_t dim2);
-static bool collision_detect_bmp(const u32* bmp1, point_t pos1, point_t dim1,
-		const u32* bmp2, point_t pos2, point_t dim2, const u32* bmp_mask);
-bool detect_bunker_collision(u16* bunker_num, u16* block_num,
-		point_t projectile_pos, const u32* bmp);
-
-//Const
-
-//Variables
+void update_tank_lives(void);
+u16 detect_collision(u16 x, u16 y);
 bunker_t bunkers[BUNKER_COUNT]; //array of 4 bunker states
 alien_missiles_t alien_missiles[GAME_CONTROLLER_MISSILES]; //array of 4 alien missiles
 //initialize the tank with a position and a bullet
@@ -94,6 +85,8 @@ tank_t tank = { { TANK_X, TANK_Y }, { { BULLET_POS, BULLET_POS }, 0 } };
 saucer_t saucer = { {SAUCER_X, SAUCER_Y}, 0};
 //initialize the alien block with a position and flags
 alien_block_t block = { { ALIEN_X, ALIEN_Y }, 0, 0, { 0 }, OUT };
+u8 tank_lives[LIFE_COUNT] = {1,1,1};
+u32 game_score = 0;
 
 //starts up the game and initializes the key components
 void game_controller_init(void) {
@@ -107,13 +100,13 @@ void game_controller_init(void) {
 	for (i = 0; i < ALIEN_ROWS; i++) {
 		block.alien_status[i] = ALIEN_ROW_ALIVE; //set all aliens to alive
 	}
-	render(&tank, &block, &alien_missiles, bunkers, &saucer); //render the sprites
+	render(&tank, &block, &alien_missiles, bunkers, &saucer, tank_lives, game_score); //render the sprites
 	for (; i < INITIAL_MOVES; i++) { //render six times
 		while (init_timer) //cycle through the timer
 			init_timer--; // Decrement the timer.
 		init_timer = ALIEN_INIT; // Reset the timer.
 		block.pos.x += MOVE_SPRITE; //move the sprite by 2
-		render(&tank, &block, &alien_missiles, bunkers, &saucer); // render the sprites
+		render(&tank, &block, &alien_missiles, bunkers, &saucer, tank_lives, game_score); // render the sprites
 	}
 	srand(time(0)); //random seed
 	saucer.active = 1;
@@ -127,42 +120,25 @@ direction tank_dir;
 void game_controller_run(void) {
 
 	tank_state_switch();
-
 	/*
 	 //switch statement for handling different keyboard presses
 	 switch (input) {
 	 case KEY_2:	//case for key 2
 	 kill_alien();	//ask the user for an alien to kill
 	 break;
-	 case KEY_3:	//case for key 3
-	 //randomly pick an alien on the bottom row and fire a missile
-	 fire_alien_missile();
-	 break;
-	 case KEY_4: //case for key 4
-	 move_tank(LEFT); //move the tank to the left
-	 break;
-	 case KEY_5: //case for key 5
-	 //fire a tank bullet at the tank's current position
-	 break;
-	 case KEY_6: //case for key 6
-	 move_tank(RIGHT); //move the tank to the right
-	 break;
+
 	 case KEY_7: //case for key 7
 	 erode_bunker(); //prompt the user for a bunker to erode
 	 break;
-	 case KEY_8: //case for key 8
-	 //move the alien block from left to right and right to left
-	 update_alien_position();
-	 break;
-	 case KEY_9:	//case for key 9
-	 //move the alien missiles down and the tank bullets up
-	 update_bullets();
+
+
 	 break;
 	 default: //case for an invalid button press
 	 break;
 	 }
 	 */
-	render(&tank, &block, &alien_missiles, bunkers, &saucer); //render after button press
+
+	render(&tank, &block, &alien_missiles, bunkers, &saucer, tank_lives, game_score); //render after button press
 }
 
 //state machine for tank movement and shooting
@@ -198,8 +174,6 @@ void tank_state_switch(void) {
 	}
 }
 
-#define EMPTY_BLOCK1 9
-#define EMPTY_BLOCK2 10
 //function that sets the bunker states to max health
 void init_bunker_states(void) {
 	u8 i; //iterates through all the bunkers
@@ -207,10 +181,7 @@ void init_bunker_states(void) {
 	for (i = 0; i < BUNKER_COUNT; i++) {
 		bunkers[i].alive = 1; //set state to max
 		for (j = 0; j < BUNKER_BLOCK_COUNT; j++) {
-			if (j == EMPTY_BLOCK1 || j == EMPTY_BLOCK2)
-				bunkers[i].block[j].block_health = 0;
-			else
-				bunkers[i].block[j].block_health = BUNKER_MAX;
+			bunkers[i].block[j].block_health = BUNKER_MAX;
 		}
 	}
 }
@@ -229,6 +200,9 @@ void move_tank(direction d) {
 		if (tank.pos.x <= GAME_WIDTH - BMP_TANK_W - MOVE_SPRITE) //check to see if tank is moving off edge
 			tank.pos.x += MOVE_SPRITE; // move to the right
 	}
+	game_score+=10;
+	if(game_score > 9990)
+		game_score = 0;
 }
 
 //function that updates the alien block position
@@ -319,6 +293,7 @@ void fire_tank_bullet(void) {
 		//set the bullet to active
 		tank.missile.active = 1;
 	}
+	update_tank_lives();
 }
 //function that fires the alien missiles
 void game_controller_fire_alien_missile(void) {
@@ -373,6 +348,10 @@ void game_controller_fire_alien_missile(void) {
 		alien_missiles[i].type = NORMAL;
 }
 
+u32 get_bottom_alien(u32 column) {
+
+}
+
 #define RES_SCALE 2
 #define OFFLIMITS 25
 //function that updates the position of all bullets, both alien and tank
@@ -386,18 +365,13 @@ void game_controller_update_bullet(void) {
 			//allow for another active bullet
 			tank.missile.active = 0;
 		}
-		u16 bunker_num;
-		u16 block_num;
-		if (detect_bunker_collision(&bunker_num, &block_num, tank.missile.pos,
-				bmp_bullet_straight_3x5)) {
-
-			print("Hit!\n\r");
+		if (render_detect_collision(bmp_bullet_straight_3x5,
+				tank.missile.pos.x, tank.missile.pos.y, BMP_BULLET_H)) {
+			print("Hit!");
 			tank.missile.active = 0;
-			bunkers[bunker_num].block[block_num].block_health--;
-			bunkers[bunker_num].block[block_num].changed = 1;
-			bunkers[bunker_num].changed = 1;
 		}
 	}
+
 }
 
 void game_controller_update_missiles(void) {
@@ -425,33 +399,52 @@ void game_controller_update_missiles(void) {
 }
 #define SAUCER_WIDTH 20
 #define NEG_SAUCER_WIDTH -20 //saucer can go off screen
-direction saucer_dir = LEFT;
+direction saucer_dir = LEFT; //start the saucer going left
 void game_controller_move_saucer(void) {
-	if (saucer_dir == LEFT) {
-		if (saucer.pos.x > NEG_SAUCER_WIDTH)
-			saucer.pos.x -= MOVE_SPRITE;
+	if (saucer_dir == LEFT) { //if the saucer is moving left
+		if (saucer.pos.x > NEG_SAUCER_WIDTH) //move as long as not off screen
+			saucer.pos.x -= MOVE_SPRITE; //decrement x position
 		else {
-			saucer.active = 0;
-			saucer_dir = RIGHT;
+			saucer.active = 0; //if off screen then deactivate
+			saucer_dir = RIGHT; //change saucer direction
 		}
-	} else if (saucer_dir == RIGHT) {
-		if (saucer.pos.x < GAME_WIDTH + SAUCER_WIDTH)
-			saucer.pos.x += MOVE_SPRITE;
+	} else if (saucer_dir == RIGHT) { //if the saucer is moving right
+		if (saucer.pos.x < GAME_WIDTH + SAUCER_WIDTH) //move until off the screen
+			saucer.pos.x += MOVE_SPRITE; //increment position
 		else {
-			saucer.active = 0;
-			saucer_dir = LEFT;
+			saucer.active = 0; //deactivate
+			saucer_dir = LEFT; //change saucer direction
 		}
 	}
 }
 
+
+//return the saucer state
 u8 game_controller_saucer_state(void) {
 	return saucer.active;
 }
-
+//change the saucer state
 void game_controller_saucer_state_toggle(void) {
 	saucer.active = !(saucer.active);
 
 }
+
+
+#define FIRST_LIFE 0 //index for the first life in the life array
+void update_tank_lives(void) {
+	u8 lives = LIFE_COUNT;
+	for(;lives-- > 0;) { //iterate over the lives in the array
+		if(tank_lives[lives]) {
+			tank_lives[lives] = 0; //change the first one to a zero
+			break; //stop checking
+		}
+	}
+	if (!tank_lives[FIRST_LIFE]) { //if the last life is zero then game over
+		render(&tank, &block, &alien_missiles, bunkers, &saucer, tank_lives, game_score);
+		render_game_over();
+	}
+}
+
 
 //function that updates (erodes) the states of the bunkers
 void erode_bunker(void) {
@@ -469,97 +462,3 @@ void erode_bunker(void) {
 		//erode the bunker in the bunker state array
 		bunkers[bunker_no].alive--;
 }
-
-bool detect_bunker_collision(u16* bunker_num, u16* block_num,
-		point_t projectile_pos, const u32* bmp) {
-
-	point_t bunker_pos = { .x = GAME_BUNKER_POS, .y = GAME_BUNKER_Y };
-	point_t block_pos;
-	//Iterate through bunkers, check for collision with each
-	for (u16 i = 0; i < GAME_BUNKER_COUNT; i++) {
-		//If collision with bunker detected
-		if (collision_detect(projectile_pos, bmp_missile_dim, bunker_pos,
-				bmp_bunker_dim)) {
-			//Iterate through blocks in bunker; once collision has been detected, return
-			for (u16 j = 0; j < GAME_BUNKER_BLOCK_COUNT; j++) {
-				//If block is already dead, dont check
-				if (bunkers[i].block[j].block_health == 0)
-					continue;
-
-				block_pos.x = bunker_pos.x + j % GAME_BUNKER_WIDTH;
-				block_pos.y = bunker_pos.y + j / GAME_BUNKER_WIDTH;
-				if (collision_detect_bmp(bmp, projectile_pos, bmp_missile_dim,
-						bmp_bunker_blocks[j], block_pos, bmp_bunker_block_dim,
-						bmp_bunker_damages[bunkers[i].block[j].block_health])) {
-					print("Hit block!\n\r");
-					*block_num = j;
-					*bunker_num = i;
-					return true;
-				}
-			}
-
-		}
-		bunker_pos.x += GAME_BUNKER_SEP;
-	}
-	return false;
-}
-
-static bool collision_detect(point_t pos1, point_t dim1, point_t pos2,
-		point_t dim2) {
-
-	s16 top1 = pos1.y;
-	s16 bottom2 = pos2.y + dim2.y;
-	if (top1 > bottom2) //first is below second
-		return false;
-	s16 bottom1 = pos1.y + dim1.y;
-	s16 top2 = pos2.y;
-	if (top2 > bottom1) //first is above second
-		return false;
-	s16 left1 = pos1.x;
-	s16 right2 = pos2.x + dim2.x;
-	if (left1 > right2) //first is right of second
-		return false;
-	s16 right1 = pos1.x + dim1.x;
-	s16 left2 = pos2.x;
-	if (left2 > right1) //first is left of second
-		return false;
-	return true;
-}
-
-static bool collision_detect_bmp(const u32* bmp1, point_t pos1, point_t dim1,
-		const u32* bmp2, point_t pos2, point_t dim2, const u32* bmp_mask) {
-	if (!collision_detect(pos1, dim1, pos2, dim2))
-		return false;
-
-	u16 shift1 = 0;
-	u16 shift2 = 0;
-	u16 y1 = 0;
-	u16 y2 = 0;
-	u16 count;
-	u32 bmp_row1;
-	u32 bmp_row2;
-
-	if (pos1.x < pos2.x) {
-		shift1 = pos2.x - pos1.x;
-	} else {
-		shift2 = pos1.x - pos2.x;
-	}
-	if (pos1.y < pos2.y) {
-		y1 = pos2.y - pos1.y;
-		count = dim1.y - y1;
-	} else {
-		y2 = pos1.y - pos2.y;
-		count = dim2.y - y2;
-	}
-
-	while (count-- > 0) {
-		bmp_row1 = bmp1[y1];
-		bmp_row2 = bmp2[y2];
-		if (bmp_mask)
-			bmp_row2 &= bmp_mask[y2];
-		if ((bmp_row1 >> shift1) & (bmp_row2 >> shift2))
-			return true;
-	}
-	return false;
-}
-

@@ -12,7 +12,6 @@
 #define BMP_H_
 
 #include "xil_types.h"
-#include "game.h"
 
 //Defines for bitmap sizes
 #define BMP_BUNKER_H 18
@@ -40,15 +39,12 @@
 
 #define BMP_SAUCER_H 7
 #define BMP_SAUCER_W 16
+#define BMP_NUMBER_W 4
+#define BMP_NUMBER_H 7
 
 //Function prototypes
 
 //Externs
-extern const point_t bmp_tank_dim;
-extern const point_t bmp_alien_dim;
-extern const point_t bmp_bunker_dim;
-extern const point_t bmp_bunker_block_dim;
-extern const point_t bmp_missile_dim;
 
 // Must define packword for each of the different bit-widths.
 extern const u32* bmp_aliens_out[];
@@ -98,4 +94,19 @@ extern const u32* bmp_bunker_blocks[];
 extern const u32 saucer_16x7[];
 extern const u32 word_score_27x8[];
 extern const u32 word_lives_27x8[];
+extern const u32 word_game_27x8[];
+extern const u32 word_over_27x8[];
+
+extern const u32 number_zero_4x7[];
+extern const u32 number_one_4x7[];
+extern const u32 number_two_4x7[];
+extern const u32 number_three_4x7[];
+extern const u32 number_four_4x7[];
+extern const u32 number_five_4x7[];
+extern const u32 number_six_4x7[];
+extern const u32 number_seven_4x7[];
+extern const u32 number_eight_4x7[];
+extern const u32 number_nine_4x7[];
+extern const u32* bmp_numbers[];
+
 #endif /* BMP_H_ */
