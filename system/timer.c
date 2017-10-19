@@ -15,8 +15,12 @@
 //Variables
 volatile u32 debounce_cnt = 0;
 volatile u32 timer_flag = 0;
+volatile u32 timer_missed = 0;
 
 void timer_interrupt_handler() {
+	if (timer_flag == 1) {
+		timer_missed = 1;
+	}
 	timer_flag = 1;
 
 	if (debounce_cnt && !(--debounce_cnt)) {

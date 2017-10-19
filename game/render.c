@@ -27,6 +27,7 @@
 #define COLOR_GREEN 0x0000FF00
 #define COLOR_BLACK 0x00000000
 #define COLOR_WHITE 0x00FFFFFF
+#define COLOR_RED   0xFFF00000
 #define GAME_BACKGROUND COLOR_BLACK
 #define BULLET_COLOR COLOR_WHITE
 #define BUNKER_ROWS 3	//Bunker dimensions in blocks
@@ -49,6 +50,12 @@
 #define ALIENS_ROW3 3
 #define ALIENS_ROW4 4
 #define ALIENS_ROW5 5	//This row only exists when shifting down
+#define SAUCER_WIDTH 16
+#define SAUCER_HEIGHT 7
+
+#define TANK_HEIGHT 8
+#define TANK_WIDTH 15
+
 #define FRAME_BUFFER_0_ADDR 0xC1000000  // Starting location in DDR where we will store the images that we display.
 static u32* frame0 = (u32*) FRAME_BUFFER_0_ADDR;
 static u32* frame1 = ((u32*) FRAME_BUFFER_0_ADDR) + SCREEN_H * SCREEN_W;//Maybe use this later?
@@ -64,16 +71,24 @@ static u32* frame1 = ((u32*) FRAME_BUFFER_0_ADDR) + SCREEN_H * SCREEN_W;//Maybe 
 static void draw_bitmap(const u32* bmp, u32 color, s16 bmp_x, s16 bmp_y,
 		s16 bmp_w, s16 bmp_h);
 static inline void set_point(s32 x, s32 y, u32 color);
+static void drawGreenLine(void);
 
 //Macros
 #define clr_point(x,y) set_point((x),(y),GAME_BACKGROUND)
+
+//Static variables
+static bunker_t prev_bunkers[GAME_BUNKER_COUNT];
+
+u32* getFrame() {
+	return frame0;
+}
 
 void render_init() {
 	vdma_init(frame0, frame1);
 	// Just paint some large red, green, blue, and white squares in different
 	// positions of the image for each frame in the buffer (framePointer0 and framePointer1).
 	const u32* bunker_bmp = bmp_bunker_24x18;
-	const u32* const tank_bmp = bmp_tank_15x8;
+	const u32* tank_bmp = bmp_tank_15x8;
 
 	int row = 0, col = 0;
 	//Init screen to background color
@@ -91,11 +106,29 @@ void render_init() {
 				GAME_BUNKER_POS + GAME_BUNKER_SEP * bunker_num, GAME_BUNKER_Y,
 				BMP_BUNKER_W, BMP_BUNKER_H);
 	}
+	memset(prev_bunkers, 0, sizeof(bunker_t) * GAME_BUNKER_COUNT);
 
 	//Draw tank TODO this should not happen until the controller calls
 	//	render the first time
 	draw_bitmap(tank_bmp, COLOR_GREEN, RENDER_TANK_X, RENDER_TANK_Y,
 			BMP_TANK_W, BMP_TANK_H);
+
+	//Draw Red Saucer
+	draw_bitmap(saucer_16x7, COLOR_RED, RENDER_TANK_X, 15, SAUCER_WIDTH,
+			SAUCER_HEIGHT);
+
+	//Draw little tanks for score
+	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, 260, 1, TANK_WIDTH, TANK_HEIGHT);
+	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, 280, 1, TANK_WIDTH, TANK_HEIGHT);
+	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, 300, 1, TANK_WIDTH, TANK_HEIGHT);
+
+	//Draw Score
+	draw_bitmap(word_score_27x8, COLOR_WHITE, 20, 1, 25, 8);
+
+	//Draw Live
+	draw_bitmap(word_lives_27x8, COLOR_WHITE, 220, 1, 25, 8);
+
+	drawGreenLine();
 
 }
 
@@ -352,29 +385,40 @@ static void update_tank(point_t* tank_block) {
 }
 
 //Update bunkers when eroded
-static void update_bunkers(u16* bunkerStates) {
-	static u16 prev_bunker_state[GAME_BUNKER_COUNT] = { BMP_BUNKER_MAX,
-			BMP_BUNKER_MAX, BMP_BUNKER_MAX, BMP_BUNKER_MAX };
+static void update_bunkers(bunker_t* bunkers) {
 
-	//Bunker blocks for calculating change
-	const u32* bmp_bunker_blocks[BUNKER_ROWS * BUNKER_COLS] =
-			{ bmp_bunker2_6x6, bmp_bunker1_6x6, bmp_bunker1_6x6,
-					bmp_bunker0_6x6, bmp_bunker1_6x6, bmp_bunker5_6x6,
-					bmp_bunker3_6x6, bmp_bunker1_6x6, bmp_bunker1_6x6,
-					bmp_bunker4_6x6, bmp_bunker4_6x6, bmp_bunker1_6x6 };
-
-	//Erosion states
-	const u32* erosion_states_bmp[BMP_BUNKER_STATES] = { bmp_bunkerDamage0_6x6,
-			bmp_bunkerDamage1_6x6, bmp_bunkerDamage2_6x6,
-			bmp_bunkerDamage3_6x6, bmp_bunkerDamage4_6x6 };
-
+	bunker_t* bunker;
+	bunker_t* prev_bunker;
 	u16 bunker_num;
 	//Iterate over bunkers
 	for (bunker_num = 0; bunker_num < GAME_BUNKER_COUNT; bunker_num++) {
-		if (bunkerStates[bunker_num] != prev_bunker_state[bunker_num]) {
+		bunker = bunkers + bunker_num;
+		prev_bunker = prev_bunkers + bunker_num;
+
+		if (!bunker->changed)
+			continue;
+
+		u16 bunker_x = GAME_BUNKER_POS + GAME_BUNKER_SEP * bunker_num;
+		u16 bunker_y = GAME_BUNKER_Y;
+		u16 block_num;
+		for (block_num = 0; block_num < GAME_BUNKER_BLOCK_COUNT; block_num++) {
+			if (!bunker->block[block_num].changed)
+				continue;
+			u16 x = bunker_x + BMP_BUNKER_BLOCK_W * block_num
+					% GAME_BUNKER_WIDTH;
+			u16 y = bunker_y + BMP_BUNKER_BLOCK_H * block_num
+					/ GAME_BUNKER_WIDTH;
+			u16 block_row;
+			for (block_row = 0; block_row;) {
+				//draw_bitmap
+			}
+			//update_bmp_row(x, y, bmp_bunker_blocks[block_num]);
+		}
+
+		if (true) {//bunkerStates[bunker_num] != prev_bunker->block[block_num]) {
 			//Load the erosion state for the given bunker
-			const u32* new_erosion_state_bmp =
-					erosion_states_bmp[bunkerStates[bunker_num]];
+			const u32* new_erosion_state_bmp = { 0 };
+			//erosion_states_bmp[bunkerStates[bunker_num]];
 
 			u16 row;
 			u16 column;
@@ -402,9 +446,10 @@ static void update_bunkers(u16* bunkerStates) {
 				}
 			}
 			//Update previous bunker state to current
-			memcpy(&prev_bunker_state, bunkerStates, sizeof(u16));
+			//memcpy(&prev_bunker_state, bunkerStates, sizeof(u16));
 		}
 	}
+
 }
 
 #define MISSILE_SHIFT 2
@@ -440,7 +485,7 @@ static void update_missiles(tank_t * tank, alien_missiles_t* alien_missiles) {
 
 //Externally accessible render function. Calls local functions to render graphics
 void render(tank_t* tank, alien_block_t* alienBlock,
-		alien_missiles_t* alien_missiles, u16* bunkerStates) {
+		alien_missiles_t* alien_missiles, bunker_t* bunkers) {
 
 	update_alien_block(alienBlock);
 
@@ -448,7 +493,7 @@ void render(tank_t* tank, alien_block_t* alienBlock,
 
 	update_missiles(tank, alien_missiles);
 
-	update_bunkers(bunkerStates);
+	update_bunkers(bunkers);
 }
 
 #define RES_SCALE 2
@@ -484,3 +529,44 @@ static void draw_bitmap(const u32* bmp, u32 color, s16 bmp_x, s16 bmp_y,
 		}
 	}
 }
+
+//Utility function for drawing a horizontal green line on game screen
+
+static void drawGreenLine() {
+	u32 row;
+	u32 col;
+	for (row = 0; row < 480; row++) {
+		for (col = 0; col < 640; col++) {
+			if (row >= 450 && row <= 452)
+				frame0[row * 640 + col] = COLOR_GREEN;
+		}
+	}
+}
+
+static bool check_point(s16 x, s16 y) {
+	if (x < 0 || x >= GAME_W || y < 0 || y >= GAME_H)
+		return false; //IF coordinates are outside bounds, do not draw
+	//Scale x and y to screen coordinates
+	s16 lx = x * RES_SCALE;
+	s16 ly = y * RES_SCALE * SCREEN_W;
+	u32 framepoint = frame0[lx + ly];
+	xil_printf("Point hit: (%d,%d) %08x\n\r", x, y, framepoint);
+	return !!frame0[lx + ly];
+}
+
+bool render_detect_collision(const u32* bmp, s16 x, s16 y, u16 h) {
+	u16 local_y = h;
+	u16 local_x;
+	while (local_y-- > 0) {
+		local_x = x;
+		u32 bmp_row = bmp[local_y];
+		for (; bmp_row; bmp_row >>= 1) {
+			if ((bmp_row & BIT0) && check_point(local_x, local_y + y)) {
+				return true;
+			}
+			local_x++;
+		}
+	}
+	return false;
+}
+

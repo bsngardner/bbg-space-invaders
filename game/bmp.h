@@ -29,6 +29,9 @@
 #define BMP_EROSION_H 6
 #define BMP_EROSION_BITS BMP_EROSION_H*BMP_EROSION_H
 
+#define BMP_BUNKER_BLOCK_W 6
+#define BMP_BUNKER_BLOCK_H 6
+
 #define BMP_BULLET_H 5
 #define BMP_BULLET_W 3
 #define BMP_BULLET_OFF 5
@@ -73,6 +76,7 @@ extern const u32 bmp_bunkerDamage1_6x6[];
 extern const u32 bmp_bunkerDamage2_6x6[];
 extern const u32 bmp_bunkerDamage3_6x6[];
 extern const u32 bmp_bunkerDamage4_6x6[];
+extern const u32* bmp_bunker_damages[];
 
 extern const u32 bmp_bunker0_6x6[];
 extern const u32 bmp_bunker1_6x6[];
@@ -80,4 +84,9 @@ extern const u32 bmp_bunker2_6x6[];
 extern const u32 bmp_bunker3_6x6[];
 extern const u32 bmp_bunker4_6x6[];
 extern const u32 bmp_bunker5_6x6[];
+extern const u32* bmp_bunker_blocks[];
+
+extern const u32 saucer_16x7[];
+extern const u32 word_score_27x8[];
+extern const u32 word_lives_27x8[];
 #endif /* BMP_H_ */

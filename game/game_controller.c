@@ -10,9 +10,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include "game_controller.h"
-#include "game.h"
 #include "render.h"
-#include "bmp.h"
 #include "table.h"
 #include "gpio.h"
 
@@ -20,7 +18,6 @@
 #define set(byte,bit) (byte |= (table_bit[bit])) //sets an alien in the bit table
 #define clear(byte,bit) (byte &= ~(table_bit[bit])) //macro for eliminating an alien from the bit table
 #define to_digit(c) (c-'0')	//converts a char to integer
-
 #define TENS_DIGIT 10	//factor for multiplying the tens digit
 #define FIRST_INPUT 0	//first index in the input buffer
 #define SECOND_INPUT 1 	//second index in the input buffer
@@ -29,7 +26,6 @@
 #define INPUT_OVERFLOW 4 //limit the length of the number entered
 #define	TWO_DIGITS 3	//location of the tens digit in the buffer
 #define	SINGLE_DIGITS 2 //location of the singles digit in the buffer
-
 #define KEY_2 '2'	//delete alien case
 #define KEY_3 '3'	//fire alien missile case
 #define KEY_4 '4'	//move tank left case
@@ -38,15 +34,14 @@
 #define KEY_7 '7'	//erode bunker case
 #define KEY_8 '8'	//update alien block position case
 #define KEY_9 '9'	//update bullet and missile position case
-
 #define BULLET_POS -1 //initial bullet position
 #define MOVE_SPRITE 2 //increment at which sprites move
 #define OFFSET_MAX 10 //max offset for deleting columns
 #define BIT_SHIFT 1
 
-#define BUNKERS 4	//number of bunkers
+#define BUNKER_COUNT 4	//number of bunkers
 #define BUNKER_MAX 4 //max health of bunkers
-
+#define BUNKER_BLOCK_COUNT 10
 #define ALIEN_X GAME_WIDTH/6	//starting point for the x pos of the alien block
 #define ALIEN_Y GAME_HEIGHT/8	//starting point for the y pos of the alien block
 #define	ALIEN_COLS 11	//number of alien columns
@@ -56,7 +51,6 @@
 #define RIGHT_WALL 123  //position of the block when it hits the wall
 #define INITIAL_MOVES 6 //number of times render is called to paint aliens for the first time
 #define BLOCK_H 72		//height of the alien block
-
 #define ALIEN_ROWS 5	//number of aliens rows
 #define ALIEN_INDEX 4	//max index of the alien array
 #define ALIEN_ROW_LEN 11 //number of alien columns
@@ -66,32 +60,26 @@
 #define SCREEN_WIDTH 640 //width of the screen
 #define GAME_HEIGHT (SCREEN_HEIGHT/2) //game height (half of screen)
 #define GAME_WIDTH (SCREEN_WIDTH/2) //game width (half of screen)
-
 #define TANK_X (GAME_WIDTH/2 - BMP_TANK_W/2) //starting x location of the tank
 #define TANK_Y GAME_HEIGHT*7/8	//starting y location of the tank
 #define TANK_BULL_Y 7		//bullet y offset for tank
 #define	TANK_BULL_X (19/2)-1 //bullet x offset for tank
-
-typedef enum { READY, SHOOT, MOVE} t_state;
-t_state tank_state;
+typedef enum {
+	READY, SHOOT, MOVE_LEFT, MOVE_RIGHT
+} t_state;
 
 void move_tank(direction); //function that moves the tank
-void update_alien_position(void); //function that updates the alien block position
-void kill_alien(void); //function that queries the user for an alien to kill, then wipes it out
-void fire_tank_bullet(void); //function that fires the tank bullet
-void fire_alien_missile(void); //function that fires the alien missiles
-void update_bullets(void); //function that updates the position of all bullets, both alien and tank
-void erode_bunker(void); //function that updates (erodes) the states of the bunkers
 void init_bunker_states(void); //function that sets the bunker states to max health
-
-u16 bunker_states[BUNKERS]; //array of 4 bunker states
-
+void tank_state_switch(void); //state machine for tank movement and shooting
+void fire_tank_bullet(void); //function that fires the tank bullet
+u16 detect_collision(u16 x, u16 y);
+bunker_t bunkers[BUNKER_COUNT]; //array of 4 bunker states
+t_state tank_state;
 alien_missiles_t alien_missiles[GAME_CONTROLLER_MISSILES]; //array of 4 alien missiles
 //initialize the tank with a position and a bullet
 tank_t tank = { { TANK_X, TANK_Y }, { { BULLET_POS, BULLET_POS }, 0 } };
 //initialize the alien block with a position and flags
 alien_block_t block = { { ALIEN_X, ALIEN_Y }, 0, 0, { 0 }, OUT };
-
 
 //starts up the game and initializes the key components
 void game_controller_init(void) {
@@ -105,13 +93,13 @@ void game_controller_init(void) {
 	for (i = 0; i < ALIEN_ROWS; i++) {
 		block.alien_status[i] = ALIEN_ROW_ALIVE; //set all aliens to alive
 	}
-	render(&tank, &block, &alien_missiles, bunker_states); //render the sprites
+	render(&tank, &block, &alien_missiles, bunkers); //render the sprites
 	for (; i < INITIAL_MOVES; i++) { //render six times
 		while (init_timer) //cycle through the timer
 			init_timer--; // Decrement the timer.
 		init_timer = ALIEN_INIT; // Reset the timer.
 		block.pos.x += MOVE_SPRITE; //move the sprite by 2
-		render(&tank, &block, &alien_missiles, bunker_states); // render the sprites
+		render(&tank, &block, &alien_missiles, bunkers); // render the sprites
 	}
 	srand(time(0)); //random seed
 	tank_state = READY;
@@ -124,77 +112,88 @@ direction tank_dir;
 //function that blocks on the user input and goes to correct function handler
 void game_controller_run(void) {
 
+	tank_state_switch();
+
+	/*
+	 //switch statement for handling different keyboard presses
+	 switch (input) {
+	 case KEY_2:	//case for key 2
+	 kill_alien();	//ask the user for an alien to kill
+	 break;
+	 case KEY_3:	//case for key 3
+	 //randomly pick an alien on the bottom row and fire a missile
+	 fire_alien_missile();
+	 break;
+	 case KEY_4: //case for key 4
+	 move_tank(LEFT); //move the tank to the left
+	 break;
+	 case KEY_5: //case for key 5
+	 //fire a tank bullet at the tank's current position
+	 break;
+	 case KEY_6: //case for key 6
+	 move_tank(RIGHT); //move the tank to the right
+	 break;
+	 case KEY_7: //case for key 7
+	 erode_bunker(); //prompt the user for a bunker to erode
+	 break;
+	 case KEY_8: //case for key 8
+	 //move the alien block from left to right and right to left
+	 update_alien_position();
+	 break;
+	 case KEY_9:	//case for key 9
+	 //move the alien missiles down and the tank bullets up
+	 update_bullets();
+	 break;
+	 default: //case for an invalid button press
+	 break;
+	 }
+	 */
+	render(&tank, &block, &alien_missiles, bunkers); //render after button press
+}
+
+//state machine for tank movement and shooting
+void tank_state_switch(void) {
 	switch (tank_state) {
 	case READY:
-		if(gpio_button_flag) {
-			gpio_button_flag = 0;
-			if(button_state & LEFT_BTN) {
-				tank_state = MOVE;
-				tank_dir = LEFT;
-			}
-			else if(button_state & RIGHT_BTN) {
-				tank_state = MOVE;
-				tank_dir = RIGHT;
-			}
-			else if(button_state & SHOOT_BTN) {
-				tank_state = SHOOT;
-			}
-		}
+
 		break;
 	case SHOOT:
 		fire_tank_bullet();
 		tank_state = READY;
 		break;
 
-	case MOVE:
-		move_tank(tank_dir);
-		tank_state = READY;
+	case MOVE_LEFT:
+		move_tank(LEFT);
+		break;
+	case MOVE_RIGHT:
+		move_tank(RIGHT);
 		break;
 
 	}
-
-	/*
-	//switch statement for handling different keyboard presses
-	switch (input) {
-	case KEY_2:	//case for key 2
-		kill_alien();	//ask the user for an alien to kill
-		break;
-	case KEY_3:	//case for key 3
-		//randomly pick an alien on the bottom row and fire a missile
-		fire_alien_missile();
-		break;
-	case KEY_4: //case for key 4
-		move_tank(LEFT); //move the tank to the left
-		break;
-	case KEY_5: //case for key 5
-		 //fire a tank bullet at the tank's current position
-		break;
-	case KEY_6: //case for key 6
-		move_tank(RIGHT); //move the tank to the right
-		break;
-	case KEY_7: //case for key 7
-		erode_bunker(); //prompt the user for a bunker to erode
-		break;
-	case KEY_8: //case for key 8
-		//move the alien block from left to right and right to left
-		update_alien_position();
-		break;
-	case KEY_9:	//case for key 9
-		//move the alien missiles down and the tank bullets up
-		update_bullets();
-		break;
-	default: //case for an invalid button press
-		break;
+	if (gpio_button_flag) {
+		gpio_button_flag = 0;
+		if (button_state & LEFT_BTN) {
+			tank_state = MOVE_LEFT;
+		} else if (button_state & RIGHT_BTN) {
+			tank_state = MOVE_RIGHT;
+		} else if (button_state & SHOOT_BTN) {
+			tank_state = SHOOT;
+		} else {
+			tank_state = READY;
+		}
 	}
-	*/
-	render(&tank, &block, &alien_missiles, bunker_states); //render after button press
 }
 
 //function that sets the bunker states to max health
 void init_bunker_states(void) {
 	u8 i; //iterates through all the bunkers
-	for (i = 0; i < BUNKERS; i++)
-		bunker_states[i] = BUNKER_MAX; //set state to max
+	u8 j;
+	for (i = 0; i < BUNKER_COUNT; i++) {
+		bunkers[i].alive = 1; //set state to max
+		for (j = 0; j < BUNKER_BLOCK_COUNT; j++) {
+			bunkers[i].block[j].block_health = BUNKER_MAX;
+		}
+	}
 }
 
 direction alien_direction = RIGHT; //global variable that tracks direction of alien block
@@ -202,8 +201,6 @@ direction alien_direction = RIGHT; //global variable that tracks direction of al
 //function that moves the tank
 void move_tank(direction d) {
 	//if the tank is moving left
-	xil_printf("COMPARE DIRECTIONS: %d %d\r\n", RIGHT, d);
-	xil_printf("COMPARE DIRECTIONS: %d %d\r\n", LEFT, d);
 	if (d == LEFT) {
 		//check to see if it has hit the edge
 		if (tank.pos.x >= MOVE_SPRITE)
@@ -213,11 +210,10 @@ void move_tank(direction d) {
 		if (tank.pos.x <= GAME_WIDTH - BMP_TANK_W - MOVE_SPRITE) //check to see if tank is moving off edge
 			tank.pos.x += MOVE_SPRITE; // move to the right
 	}
-	xil_printf("TANK POS: %d %d\r\n", tank.pos.x, tank.pos.y);
 }
 
 //function that updates the alien block position
-void update_alien_position(void) {
+void game_controller_update_alien_position(void) {
 
 	if (alien_direction == LEFT) { //if aliens are moving left
 		if (block.pos.x + block.loffset >= MOVE_SPRITE) { //and they haven't run off the screen
@@ -236,13 +232,14 @@ void update_alien_position(void) {
 		}
 	}
 	if (block.legs == OUT) //alternate between the aliens with legs out
-		block.legs = IN;   //and legs in
-	else	//if the legs are already in then shift back to out
+		block.legs = IN; //and legs in
+	else
+		//if the legs are already in then shift back to out
 		block.legs = OUT;
 }
 
 //function that queries the user for an alien to kill, then wipes it out
-void kill_alien(void) {
+void game_controller_kill_alien(void) {
 	char inputs[BUFFER]; //create an input buffer
 	u8 i = 0; //keep track of length of input
 	u8 alien_no; //integer used for indexing
@@ -288,8 +285,8 @@ void kill_alien(void) {
 	while ((maskp = ((maskp << BIT_SHIFT) & ALIEN_ROW_ALIVE))) {//find the left offset
 		i--;
 	}
-	block.loffset = i * ALIEN_SEP;  //calculate the left offset
-	block.roffset = n * ALIEN_SEP;	//calculate the right offset
+	block.loffset = i * ALIEN_SEP; //calculate the left offset
+	block.roffset = n * ALIEN_SEP; //calculate the right offset
 
 }
 //function that fires the tank bullet
@@ -305,7 +302,7 @@ void fire_tank_bullet(void) {
 	}
 }
 //function that fires the alien missiles
-void fire_alien_missile(void) {
+void game_controller_fire_alien_missile(void) {
 	u8 i;
 	//used to identify the column of the shooter
 	u8 shooter_col;
@@ -347,6 +344,7 @@ void fire_alien_missile(void) {
 	//update the alien missile y position
 	alien_missiles[i].pos.y = block.pos.y + (shooter_row + 1) * ALIEN_SEP
 			- ALIEN_MID;
+
 	//about once every 4 shots shoot a strong alien missile
 	if (rand() % GAME_CONTROLLER_MISSILES == 0)
 		//set the alien missile type to strong
@@ -356,18 +354,29 @@ void fire_alien_missile(void) {
 		alien_missiles[i].type = NORMAL;
 }
 
+#define RES_SCALE 2
+#define OFFLIMITS 25
 //function that updates the position of all bullets, both alien and tank
-void update_bullets(void) {
+void game_controller_update_bullet(void) {
 	//if there is already an active tank bullet
 	if (tank.missile.active) {
 		//update its y position by 2 pixels
 		tank.missile.pos.y = tank.missile.pos.y - MOVE_SPRITE;
 		//if the tank bullet leaves the screen
-		if (tank.missile.pos.y < 0) {
+		if (tank.missile.pos.y < OFFLIMITS) {
 			//allow for another active bullet
 			tank.missile.active = 0;
 		}
+		if (render_detect_collision(bmp_bullet_straight_3x5,
+				tank.missile.pos.x, tank.missile.pos.y, BMP_BULLET_H)) {
+			print("Hit!");
+			tank.missile.active = 0;
+		}
 	}
+
+}
+
+void game_controller_update_missiles(void) {
 	//iterate through all the alien missiles
 	u8 i;
 	for (i = 0; i < GAME_CONTROLLER_MISSILES; i++) {
@@ -383,7 +392,7 @@ void update_bullets(void) {
 				//change the guise
 				alien_missiles[i].guise = GUISE_1;
 			//if the alien missile exits the screen, allow it to be fired again
-			if (alien_missiles[i].pos.y >= GAME_HEIGHT) {
+			if (alien_missiles[i].pos.y >= 220) {
 				//allow for another alien missile
 				alien_missiles[i].active = 0;
 			}
@@ -399,11 +408,11 @@ void erode_bunker(void) {
 	//converts the keyboard input to an integer
 	u8 bunker_no = to_digit(input);
 	//if the bunker number is out of bounds then skip the erosion
-	if (bunker_no >= BUNKERS) {
+	if (bunker_no >= BUNKER_COUNT) {
 		return;
 	}
 	//if the bunker state is not already zero
-	if (bunker_states[bunker_no] != 0)
+	if (bunkers[bunker_no].alive != 0)
 		//erode the bunker in the bunker state array
-		bunker_states[bunker_no] = bunker_states[bunker_no]--;
+		bunkers[bunker_no].alive--;
 }
