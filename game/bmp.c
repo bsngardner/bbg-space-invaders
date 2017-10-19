@@ -8,6 +8,12 @@
 #include <stdint.h>
 #include "bmp.h"
 
+const point_t bmp_tank_dim = { BMP_TANK_W, BMP_TANK_H };
+const point_t bmp_alien_dim = { BMP_ALIEN_W, BMP_ALIEN_H };
+const point_t bmp_bunker_dim = { BMP_BUNKER_W, BMP_BUNKER_H };
+const point_t bmp_bunker_block_dim = { BMP_BUNKER_BLOCK_W, BMP_BUNKER_BLOCK_H };
+const point_t bmp_missile_dim = { BMP_BULLET_W, BMP_BULLET_H };
+
 //Macros
 //Utilities for packing bits into bitmaps
 

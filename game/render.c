@@ -33,9 +33,6 @@
 #define BUNKER_ROWS 3	//Bunker dimensions in blocks
 #define BUNKER_COLS 4
 
-#define SCREEN_H 480
-#define SCREEN_W 640
-
 #define ALIENS_SEPX (BMP_ALIEN_W)	//Horizontal separation between aliens
 #define ALIENS_SEPY (BMP_ALIEN_W-2)	//Separation between aliens vertically
 #define ALIENS_START 0
@@ -58,7 +55,8 @@
 
 #define FRAME_BUFFER_0_ADDR 0xC1000000  // Starting location in DDR where we will store the images that we display.
 static u32* frame0 = (u32*) FRAME_BUFFER_0_ADDR;
-static u32* frame1 = ((u32*) FRAME_BUFFER_0_ADDR) + SCREEN_H * SCREEN_W;//Maybe use this later?
+static u32* frame1 = ((u32*) FRAME_BUFFER_0_ADDR) + GAME_SCREEN_H
+		* GAME_SCREEN_W;//Maybe use this later?
 
 //#define DEBUG
 
@@ -92,10 +90,10 @@ void render_init() {
 
 	int row = 0, col = 0;
 	//Init screen to background color
-	for (row = 0; row < SCREEN_H; row++) {
-		for (col = 0; col < SCREEN_W; col++) {
-			frame0[row * SCREEN_W + col] = GAME_BACKGROUND;
-			frame1[row * SCREEN_W + col] = GAME_BACKGROUND;
+	for (row = 0; row < GAME_SCREEN_H; row++) {
+		for (col = 0; col < GAME_SCREEN_W; col++) {
+			frame0[row * GAME_SCREEN_W + col] = GAME_BACKGROUND;
+			frame1[row * GAME_SCREEN_W + col] = GAME_BACKGROUND;
 		}
 	}
 
@@ -503,11 +501,11 @@ static inline void set_point(s32 x, s32 y, u32 color) {
 		return; //IF coordinates are outside bounds, do not draw
 	//Scale x and y to screen coordinates
 	x *= RES_SCALE;
-	y *= RES_SCALE * SCREEN_W;
+	y *= RES_SCALE * GAME_SCREEN_W;
 	//Draw 2x2 game pixel
 	frame0[y + x] = color;
 	frame0[y + x + 1] = color;
-	y += SCREEN_W;
+	y += GAME_SCREEN_W;
 	frame0[y + x] = color;
 	frame0[y + x + 1] = color;
 }
@@ -542,31 +540,3 @@ static void drawGreenLine() {
 		}
 	}
 }
-
-static bool check_point(s16 x, s16 y) {
-	if (x < 0 || x >= GAME_W || y < 0 || y >= GAME_H)
-		return false; //IF coordinates are outside bounds, do not draw
-	//Scale x and y to screen coordinates
-	s16 lx = x * RES_SCALE;
-	s16 ly = y * RES_SCALE * SCREEN_W;
-	u32 framepoint = frame0[lx + ly];
-	xil_printf("Point hit: (%d,%d) %08x\n\r", x, y, framepoint);
-	return !!frame0[lx + ly];
-}
-
-bool render_detect_collision(const u32* bmp, s16 x, s16 y, u16 h) {
-	u16 local_y = h;
-	u16 local_x;
-	while (local_y-- > 0) {
-		local_x = x;
-		u32 bmp_row = bmp[local_y];
-		for (; bmp_row; bmp_row >>= 1) {
-			if ((bmp_row & BIT0) && check_point(local_x, local_y + y)) {
-				return true;
-			}
-			local_x++;
-		}
-	}
-	return false;
-}
-
