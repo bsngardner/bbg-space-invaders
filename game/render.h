@@ -22,7 +22,7 @@
 //Function prototypes
 void render_init();
 void render(tank_t* tank, alien_block_t* alienBlock,
-		alien_missiles_t* alienBullets, bunker_t* bunkers);
+		alien_missiles_t* alienBullets, bunker_t* bunkers, saucer_t* saucer);
 
 //
 void drawSaucer(u16 val_x, u16 val_y);

@@ -54,28 +54,27 @@ int main() {
 		}
 		timer_flag = 0;
 
-#ifdef PRINT_UTIL
+#ifdef DEBUG
 		if (timer_missed) {
 			print("Timer missed!\n\r");
 			timer_missed = 0;
 		}
-
 		idle_count = MAX_IDLE_COUNT - idle_count;
 
 		avg_util = (avg_util - (avg_util >> 2)) + (idle_count >> 2);
 		if (!(--i)) {
-			xil_printf("utilization: %d\n\r", avg_util);
+			//xil_printf("utilization: %d\n\r", avg_util);
 			i = 50;
 		}
 
 		if (idle_count > max_util) {
 			max_util = idle_count;
-			xil_printf("Max utilization: %d\n\r", max_util);
+			//xil_printf("Max utilization: %d\n\r", max_util);
 		}
 
 		if (avg_util > max_avg_util) {
 			max_avg_util = avg_util;
-			xil_printf("Max average utilization: %d\n\r", max_avg_util);
+			//xil_printf("Max average utilization: %d\n\r", max_avg_util);
 		}
 #endif
 

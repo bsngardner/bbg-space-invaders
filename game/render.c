@@ -114,7 +114,7 @@ void render_init() {
 			BMP_TANK_W, BMP_TANK_H);
 
 	//Draw Red Saucer
-	draw_bitmap(saucer_16x7, COLOR_RED, RENDER_TANK_X, 15, SAUCER_WIDTH,
+	draw_bitmap(saucer_16x7, COLOR_RED, 321, 15, SAUCER_WIDTH,
 			SAUCER_HEIGHT);
 
 	//Draw little tanks for score
@@ -383,6 +383,52 @@ static void update_tank(point_t* tank_block) {
 	memcpy(&prev_tank_block, tank_block, sizeof(point_t));
 
 }
+#define SAUCER_X 321
+#define SAUCER_Y 15
+//Update tank position
+static void update_saucer(point_t* saucer_block) {
+	//saucer is initially drawn in init, so prev_saucer can be initialized to
+	//	 the start location of the saucer
+	static point_t prev_saucer_block = { SAUCER_X, SAUCER_Y };
+	const u32* saucer_bmp = bmp_saucer_16x7; //Get saucer bitmap
+	u16 y = saucer_block->y; //This doesnt change
+	u16 saucer_y; //This does, as we move down each pixel row in the saucer
+	for (saucer_y = 0; saucer_y < BMP_SAUCER_H; saucer_y++) { //Iterate over pixel rows in saucer
+		s16 offset = saucer_block->x - prev_saucer_block.x; //Shift distance
+		u32 delta; //These are the same as in update_alien_row
+		u32 set_delta;
+		u32 reset_delta;
+		u32 new = saucer_bmp[saucer_y];
+		u32 prev = saucer_bmp[saucer_y];
+		if (offset > 0) {
+			new = new << offset;
+		} else if (offset < 0) {
+			offset = -offset;
+			new = new >> offset;
+		}
+		delta = new ^ prev;
+
+		u16 x;
+		x = prev_saucer_block.x;
+		set_delta = delta & ~prev;
+		reset_delta = delta & prev;
+
+		while (set_delta || reset_delta) {
+			if (set_delta & BIT0) {
+				set_point(x, y + saucer_y, COLOR_RED);
+			}
+			if (reset_delta & BIT0) {
+				clr_point (x,y+saucer_y);
+			}
+
+			reset_delta >>= 1;
+			set_delta >>= 1;
+			x++;
+		}
+	}
+	memcpy(&prev_saucer_block, saucer_block, sizeof(point_t));
+
+}
 
 //Update bunkers when eroded
 static void update_bunkers(bunker_t* bunkers) {
@@ -485,7 +531,7 @@ static void update_missiles(tank_t * tank, alien_missiles_t* alien_missiles) {
 
 //Externally accessible render function. Calls local functions to render graphics
 void render(tank_t* tank, alien_block_t* alienBlock,
-		alien_missiles_t* alien_missiles, bunker_t* bunkers) {
+		alien_missiles_t* alien_missiles, bunker_t* bunkers, saucer_t* saucer) {
 
 	update_alien_block(alienBlock);
 
@@ -494,6 +540,8 @@ void render(tank_t* tank, alien_block_t* alienBlock,
 	update_missiles(tank, alien_missiles);
 
 	update_bunkers(bunkers);
+
+	update_saucer(&saucer->pos);
 }
 
 #define RES_SCALE 2

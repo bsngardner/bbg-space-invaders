@@ -64,9 +64,12 @@
 #define TANK_Y GAME_HEIGHT*7/8	//starting y location of the tank
 #define TANK_BULL_Y 7		//bullet y offset for tank
 #define	TANK_BULL_X (19/2)-1 //bullet x offset for tank
-typedef enum {
+#define SAUCER_X 321
+#define SAUCER_Y 15
+
+enum {
 	READY, SHOOT, MOVE_LEFT, MOVE_RIGHT
-} t_state;
+} tank_state = READY;
 
 void move_tank(direction); //function that moves the tank
 void init_bunker_states(void); //function that sets the bunker states to max health
@@ -74,10 +77,10 @@ void tank_state_switch(void); //state machine for tank movement and shooting
 void fire_tank_bullet(void); //function that fires the tank bullet
 u16 detect_collision(u16 x, u16 y);
 bunker_t bunkers[BUNKER_COUNT]; //array of 4 bunker states
-t_state tank_state;
 alien_missiles_t alien_missiles[GAME_CONTROLLER_MISSILES]; //array of 4 alien missiles
 //initialize the tank with a position and a bullet
 tank_t tank = { { TANK_X, TANK_Y }, { { BULLET_POS, BULLET_POS }, 0 } };
+saucer_t saucer = { {SAUCER_X, SAUCER_Y}, 0};
 //initialize the alien block with a position and flags
 alien_block_t block = { { ALIEN_X, ALIEN_Y }, 0, 0, { 0 }, OUT };
 
@@ -93,16 +96,16 @@ void game_controller_init(void) {
 	for (i = 0; i < ALIEN_ROWS; i++) {
 		block.alien_status[i] = ALIEN_ROW_ALIVE; //set all aliens to alive
 	}
-	render(&tank, &block, &alien_missiles, bunkers); //render the sprites
+	render(&tank, &block, &alien_missiles, bunkers, &saucer); //render the sprites
 	for (; i < INITIAL_MOVES; i++) { //render six times
 		while (init_timer) //cycle through the timer
 			init_timer--; // Decrement the timer.
 		init_timer = ALIEN_INIT; // Reset the timer.
 		block.pos.x += MOVE_SPRITE; //move the sprite by 2
-		render(&tank, &block, &alien_missiles, bunkers); // render the sprites
+		render(&tank, &block, &alien_missiles, bunkers, &saucer); // render the sprites
 	}
 	srand(time(0)); //random seed
-	tank_state = READY;
+	saucer.active = 1;
 }
 
 #define LEFT_BTN 0x08	//bit mask for left button
@@ -148,7 +151,7 @@ void game_controller_run(void) {
 	 break;
 	 }
 	 */
-	render(&tank, &block, &alien_missiles, bunkers); //render after button press
+	render(&tank, &block, &alien_missiles, bunkers, &saucer); //render after button press
 }
 
 //state machine for tank movement and shooting
@@ -398,6 +401,35 @@ void game_controller_update_missiles(void) {
 			}
 		}
 	}
+}
+#define SAUCER_WIDTH 20
+#define NEG_SAUCER_WIDTH -20 //saucer can go off screen
+direction saucer_dir = LEFT;
+void game_controller_move_saucer(void) {
+	if (saucer_dir == LEFT) {
+		if (saucer.pos.x > NEG_SAUCER_WIDTH)
+			saucer.pos.x -= MOVE_SPRITE;
+		else {
+			saucer.active = 0;
+			saucer_dir = RIGHT;
+		}
+	} else if (saucer_dir == RIGHT) {
+		if (saucer.pos.x < GAME_WIDTH + SAUCER_WIDTH)
+			saucer.pos.x += MOVE_SPRITE;
+		else {
+			saucer.active = 0;
+			saucer_dir = LEFT;
+		}
+	}
+}
+
+u8 game_controller_saucer_state(void) {
+	return saucer.active;
+}
+
+void game_controller_saucer_state_toggle(void) {
+	saucer.active = !(saucer.active);
+
 }
 
 //function that updates (erodes) the states of the bunkers

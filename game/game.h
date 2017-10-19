@@ -36,6 +36,11 @@ typedef struct {
 	} missile;
 } tank_t;
 
+typedef struct {
+	point_t pos;
+	u8 active;
+} saucer_t;
+
 //Alien missile type
 typedef struct {
 	point_t pos;

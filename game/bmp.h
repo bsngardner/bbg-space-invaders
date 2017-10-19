@@ -37,6 +37,9 @@
 #define BMP_BULLET_OFF 5
 #define BMP_MISSILES 4
 
+#define BMP_SAUCER_H 7
+#define BMP_SAUCER_W 16
+
 //Function prototypes
 
 //Externs
