@@ -36,8 +36,6 @@
 #define SCREEN_H 480
 #define SCREEN_W 640
 
-#define ALIENS_SEPX (BMP_ALIEN_W)	//Horizontal separation between aliens
-#define ALIENS_SEPY (BMP_ALIEN_W-2)	//Separation between aliens vertically
 #define ALIENS_START 0
 #define ALIENS_END 10
 #define ALIENS_ROW_COUNT 5
@@ -68,10 +66,8 @@
 
 #define TANK_HEIGHT 8 //tank sprite height
 #define TANK_WIDTH 15 //tank sprite width
-
 #define WORDS_W 25 //word sprite width
 #define WORDS_H 8 //word sprite height
-
 #define FRAME_BUFFER_0_ADDR 0xC1000000  // Starting location in DDR where we will store the images that we display.
 static u32* frame0 = (u32*) FRAME_BUFFER_0_ADDR;
 static u32* frame1 = ((u32*) FRAME_BUFFER_0_ADDR) + SCREEN_H * SCREEN_W;//Maybe use this later?
@@ -120,11 +116,18 @@ void render_init() {
 	//Draw all bunkers
 	u16 bunker_num;
 	for (bunker_num = 0; bunker_num < GAME_BUNKER_COUNT; bunker_num++) {
-		draw_bitmap(bunker_bmp, COLOR_GREEN,
-				GAME_BUNKER_POS + GAME_BUNKER_SEP * bunker_num, GAME_BUNKER_Y,
-				BMP_BUNKER_W, BMP_BUNKER_H);
+
+		prev_bunkers[bunker_num].changed = 1;
+		for (int block_num = 0; block_num < GAME_BUNKER_BLOCK_COUNT; block_num++) {
+			prev_bunkers[bunker_num].block[block_num].changed = 1;
+			prev_bunkers[bunker_num].block[block_num].block_health = 0;
+
+		}
+		//
+		//		draw_bitmap(bunker_bmp, COLOR_GREEN,
+		//				GAME_BUNKER_POS + GAME_BUNKER_SEP * bunker_num, GAME_BUNKER_Y,
+		//				BMP_BUNKER_W, BMP_BUNKER_H);
 	}
-	memset(prev_bunkers, 0, sizeof(bunker_t) * GAME_BUNKER_COUNT);
 
 	//Draw tank TODO this should not happen until the controller calls
 	//	render the first time
@@ -136,20 +139,29 @@ void render_init() {
 			SAUCER_HEIGHT);
 
 	//Draw little tanks for score
-	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, TANK_LIFE_1, TOP_SCREEN, TANK_WIDTH, TANK_HEIGHT);
-	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, TANK_LIFE_2, TOP_SCREEN, TANK_WIDTH, TANK_HEIGHT);
-	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, TANK_LIFE_3, TOP_SCREEN, TANK_WIDTH, TANK_HEIGHT);
+	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, TANK_LIFE_1, TOP_SCREEN,
+			TANK_WIDTH, TANK_HEIGHT);
+	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, TANK_LIFE_2, TOP_SCREEN,
+			TANK_WIDTH, TANK_HEIGHT);
+	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, TANK_LIFE_3, TOP_SCREEN,
+			TANK_WIDTH, TANK_HEIGHT);
 
 	//Draw Score
-	draw_bitmap(word_score_27x8, COLOR_WHITE, SCORE_X, TOP_SCREEN, WORDS_W, WORDS_H);
+	draw_bitmap(word_score_27x8, COLOR_WHITE, SCORE_X, TOP_SCREEN, WORDS_W,
+			WORDS_H);
 	u32 offset = WORDS_W + SCORE_X;
-	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_1, TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
-	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_2, TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
-	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_3, TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
-	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_4, TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
+	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_1, TOP_SCREEN,
+			BMP_NUMBER_W, BMP_NUMBER_H);
+	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_2, TOP_SCREEN,
+			BMP_NUMBER_W, BMP_NUMBER_H);
+	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_3, TOP_SCREEN,
+			BMP_NUMBER_W, BMP_NUMBER_H);
+	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_4, TOP_SCREEN,
+			BMP_NUMBER_W, BMP_NUMBER_H);
 
 	//Draw Live
-	draw_bitmap(word_lives_27x8, COLOR_WHITE, LIVES_X, TOP_SCREEN, WORDS_W, WORDS_H);
+	draw_bitmap(word_lives_27x8, COLOR_WHITE, LIVES_X, TOP_SCREEN, WORDS_W,
+			WORDS_H);
 
 	//Draw green line
 	drawGreenLine();
@@ -162,10 +174,13 @@ void render_init() {
 #define HUNDRED 100
 #define TEN 10
 static void update_score(u32 score) {
+	static u32 prev_score = 0;
+	if (score == prev_score)
+		return;
 
 	u32 thousand = score / THOUSAND;
-	u32 hundred = (score-thousand*THOUSAND) / HUNDRED;
-	u32 ten = (score-thousand*THOUSAND-hundred*HUNDRED) / TEN;
+	u32 hundred = (score - thousand * THOUSAND) / HUNDRED;
+	u32 ten = (score - thousand * THOUSAND - hundred * HUNDRED) / TEN;
 
 	u32 offset = WORDS_W + SCORE_X;
 	if (prev_numbers[NUMBER_3] != thousand) {
@@ -189,6 +204,7 @@ static void update_score(u32 score) {
 				TOP_SCREEN, BMP_NUMBER_W, BMP_NUMBER_H);
 		prev_numbers[NUMBER_1] = ten;
 	}
+	prev_score = score;
 }
 #define GAME_X 130
 #define GAME_Y 120
@@ -412,6 +428,8 @@ static void update_tank(point_t* tank_block) {
 	//Tank is initially drawn in init, so prev_tank can be initialized to
 	//	 the start location of the tank
 	static point_t prev_tank_block = { RENDER_TANK_X, RENDER_TANK_Y };
+	if (tank_block->x == prev_tank_block.x)
+		return;
 	const u32* tank_bmp = bmp_tank_15x8; //Get tank bitmap
 	u16 y = tank_block->y; //This doesnt change
 	u16 tank_y; //This does, as we move down each pixel row in the tank
@@ -458,6 +476,8 @@ static void update_saucer(point_t* saucer_block) {
 	//saucer is initially drawn in init, so prev_saucer can be initialized to
 	//	 the start location of the saucer
 	static point_t prev_saucer_block = { SAUCER_X, SAUCER_Y };
+	if (saucer_block->x == prev_saucer_block.x)
+		return;
 	const u32* saucer_bmp = bmp_saucer_16x7; //Get saucer bitmap
 	u16 y = saucer_block->y; //This doesnt change
 	u16 saucer_y; //This does, as we move down each pixel row in the saucer
@@ -498,6 +518,26 @@ static void update_saucer(point_t* saucer_block) {
 
 }
 
+void update_bmp_row(s16 x, s16 y, u32 old, u32 new, u32 color) {
+	u32 delta = old ^ new;
+	u32 set_delta = delta & ~old;
+	u32 reset_delta = delta & old;
+
+	s16 lx = x;
+	while (set_delta || reset_delta) {
+		if (set_delta & BIT0) {
+			set_point(lx, y, color);
+		}
+		if (reset_delta & BIT0) {
+			clr_point (lx, y);
+		}
+
+		reset_delta >>= 1;
+		set_delta >>= 1;
+		lx++;
+	}
+}
+
 //Update bunkers when eroded
 static void update_bunkers(bunker_t* bunkers) {
 
@@ -518,52 +558,33 @@ static void update_bunkers(bunker_t* bunkers) {
 		for (block_num = 0; block_num < GAME_BUNKER_BLOCK_COUNT; block_num++) {
 			if (!bunker->block[block_num].changed)
 				continue;
-			u16 x = bunker_x + BMP_BUNKER_BLOCK_W * block_num
-					% GAME_BUNKER_WIDTH;
-			u16 y = bunker_y + BMP_BUNKER_BLOCK_H * block_num
-					/ GAME_BUNKER_WIDTH;
+			//xil_printf("\tblock %d changed\n\r", block_num);
+			u16 x = bunker_x + BMP_BUNKER_BLOCK_W * (block_num
+					% GAME_BUNKER_WIDTH);
+			u16 y = bunker_y + BMP_BUNKER_BLOCK_H * (block_num
+					/ GAME_BUNKER_WIDTH);
+
 			u16 block_row;
-			for (block_row = 0; block_row;) {
+			for (block_row = 0; block_row < BMP_BUNKER_BLOCK_H; block_row++) {
 				//draw_bitmap
+				u32
+						old_row =
+								bmp_bunker_blocks[block_num][block_row]
+										& bmp_bunker_damages[prev_bunker->block[block_num].block_health][block_row];
+				u32
+						new_row =
+								bmp_bunker_blocks[block_num][block_row]
+										& bmp_bunker_damages[bunker->block[block_num].block_health][block_row];
+
+				update_bmp_row(x, y, old_row, new_row, COLOR_GREEN);
+				y++;
 			}
-			//update_bmp_row(x, y, bmp_bunker_blocks[block_num]);
+
+			bunker->block[block_num].changed = 0;
 		}
-
-		if (true) {//bunkerStates[bunker_num] != prev_bunker->block[block_num]) {
-			//Load the erosion state for the given bunker
-			const u32* new_erosion_state_bmp = { 0 };
-			//erosion_states_bmp[bunkerStates[bunker_num]];
-
-			u16 row;
-			u16 column;
-			//For each row and column of each bunker, calculate change in erosion
-			// and apply damage
-			for (row = 0; row < BUNKER_ROWS; row++) {
-				u16 y = GAME_BUNKER_Y + BMP_EROSION_H * row;
-				for (column = 0; column < BUNKER_COLS; column++) {
-
-					u16 x = GAME_BUNKER_POS + GAME_BUNKER_SEP * bunker_num
-							+ BMP_EROSION_H * column;
-					const u32* prev_erosion_state_bmp = bmp_bunker_blocks[row
-							* BUNKER_COLS + column];
-
-					u16 bits;
-					u32 erosion_bmp[BMP_EROSION_BITS];
-					for (bits = 0; bits < BMP_EROSION_BITS; bits++) {
-						erosion_bmp[bits] = new_erosion_state_bmp[bits]
-								& prev_erosion_state_bmp[bits];
-					}
-					draw_bitmap(bmp_bunkerDamage4_6x6, COLOR_BLACK, x, y,
-							BMP_EROSION_H, BMP_EROSION_H);
-					draw_bitmap(erosion_bmp, COLOR_GREEN, x, y, BMP_EROSION_H,
-							BMP_EROSION_H);
-				}
-			}
-			//Update previous bunker state to current
-			//memcpy(&prev_bunker_state, bunkerStates, sizeof(u16));
-		}
+		bunker->changed = 0;
+		memcpy(prev_bunker, bunker, sizeof(bunker_t));
 	}
-
 }
 
 #define MISSILE_SHIFT 2
@@ -598,15 +619,24 @@ static void update_missiles(tank_t * tank, alien_missiles_t* alien_missiles) {
 }
 
 #define LIFE_COUNT 3 //number of tank lives
-void update_tank_life_draw(u8* tank_lives) {
-	u8 lives;
+#define LIFE_DEC -1
+#define LIFE_INC 1
+void update_tank_life_draw(u8 tank_lives) {
+	static u8 prev_lives = 0;
+	if (tank_lives == prev_lives)
+		return;
+	u16 life = prev_lives;
+	s16 delta = (tank_lives > prev_lives) ? (LIFE_INC) : (LIFE_DEC);
 	u16 offset; //create the offset for the tanks
-	for(lives=0;lives<LIFE_COUNT;lives++) {
-		offset = TANK_LIFE_1 + lives * TANK_SPACE; //calc x pos offset
-		if(!tank_lives[lives]) { //if the tank is dead
-			//draw black
-			draw_bitmap(bmp_tank_15x8, COLOR_BLACK, offset, TOP_SCREEN, TANK_WIDTH, TANK_HEIGHT);
-			break;
+	for (; life != tank_lives; life += delta) {
+		offset = TANK_LIFE_1 + life * TANK_SPACE; //calc x pos offset
+		//draw black
+		if (delta < 0) {
+			draw_bitmap(bmp_tank_15x8, COLOR_BLACK, offset, TOP_SCREEN,
+					TANK_WIDTH, TANK_HEIGHT);
+		} else {
+			draw_bitmap(bmp_tank_15x8, COLOR_GREEN, offset, TOP_SCREEN,
+					TANK_WIDTH, TANK_HEIGHT);
 		}
 	}
 }
@@ -614,7 +644,7 @@ void update_tank_life_draw(u8* tank_lives) {
 //Externally accessible render function. Calls local functions to render graphics
 void render(tank_t* tank, alien_block_t* alienBlock,
 		alien_missiles_t* alien_missiles, bunker_t* bunkers, saucer_t* saucer,
-		u8* tank_lives, u32 score) {
+		u8 tank_lives, u32 score) {
 
 	update_alien_block(alienBlock);
 

@@ -10,7 +10,7 @@
 #include "gpio.h"
 
 //Defines
-#define DEBOUNCE_COUNT 4
+#define DEBOUNCE_COUNT 12
 
 //Variables
 volatile u32 debounce_cnt = 0;
