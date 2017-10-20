@@ -51,6 +51,7 @@ extern const point_t bmp_alien_dim;
 extern const point_t bmp_bunker_dim;
 extern const point_t bmp_bunker_block_dim;
 extern const point_t bmp_missile_dim;
+extern const point_t bmp_saucer_dim;
 
 // Must define packword for each of the different bit-widths.
 extern const u32* bmp_aliens_out[];
@@ -70,6 +71,7 @@ extern const u32 bmp_alien_empty[];
 extern const u32 bmp_tank_15x8[];
 extern const u32 bmp_tank_explode1_15x8[];
 extern const u32 bmp_tank_explode2_15x8[];
+extern const u32* bmp_tanks[];
 
 extern const u32 bmp_alien_missile_cross1_3x5[];
 extern const u32 bmp_alien_missile_cross2_3x5[];
@@ -99,11 +101,11 @@ extern const u32 bmp_bunker4_6x6[];
 extern const u32 bmp_bunker5_6x6[];
 extern const u32* bmp_bunker_blocks[];
 
-extern const u32 saucer_16x7[];
-extern const u32 word_score_27x8[];
-extern const u32 word_lives_27x8[];
-extern const u32 word_game_27x8[];
-extern const u32 word_over_27x8[];
+extern const u32 bmp_saucer_16x7[];
+extern const u32 bmp_word_score_27x8[];
+extern const u32 bmp_word_lives_27x8[];
+extern const u32 bmp_word_game_27x8[];
+extern const u32 bmp_word_over_27x8[];
 
 extern const u32 number_zero_4x7[];
 extern const u32 number_one_4x7[];

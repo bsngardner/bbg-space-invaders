@@ -26,31 +26,41 @@
 #define GAME_BUNKER_Y ((GAME_H*3)/4-BMP_BUNKER_H/2) //y position of the bunkers
 #define GAME_BUNKER_WIDTH 4
 #define GAME_BUNKER_MAX 4
+#define GAME_LIFE_COUNT 3
+#define GAME_TANK_STARTX (GAME_W/2 - BMP_TANK_W/2)
+#define GAME_TANK_STARTY (GAME_H*7/8)
+
+//
 //Struct for coordinate point
 typedef struct {
 	s16 x;
 	s16 y;
 } point_t;
 
-
-
 //Tank struct, contains missile
 typedef struct {
 	point_t pos;
-	enum { ALIVE=0, EXPLODE_1=1, EXPLODE_2=2, RESET=3} state;
+	u8 lives;
+	u8 changed;
+	enum {
+		ALIVE = 0,
+		EXPLODE = 1,
+		EXPLODE_1 = 2,
+		EXPLODE_2 = 3,
+		INIT = 4,
+		GAME_OVER = 5
+	} state;
 	struct {
 		point_t pos;
 		u8 active;
 	} missile;
 } tank_t;
 
-
 typedef struct {
 	point_t pos;
 	u8 active;
 	u8 alive;
 } saucer_t;
-
 
 //Alien missile type
 typedef struct {
@@ -75,11 +85,6 @@ typedef struct alien_block {
 		OUT = 0, IN = 1
 	} legs;
 } alien_block_t;
-
-typedef struct {
-	point_t pos;
-	u8 active;
-} saucer_t;
 
 typedef struct {
 	u8 changed;

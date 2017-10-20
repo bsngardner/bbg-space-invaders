@@ -54,21 +54,13 @@ const point_t bmp_alien_dim = { BMP_ALIEN_W, BMP_ALIEN_H };
 const point_t bmp_bunker_dim = { BMP_BUNKER_W, BMP_BUNKER_H };
 const point_t bmp_bunker_block_dim = { BMP_BUNKER_BLOCK_W, BMP_BUNKER_BLOCK_H };
 const point_t bmp_missile_dim = { BMP_BULLET_W, BMP_BULLET_H };
+const point_t bmp_saucer_dim = { BMP_SAUCER_W, BMP_SAUCER_H };
 
 //define packword 27, for the words score and lives.
 #define packword27(b26, b25, b24, b23, b22, b21, b20, b19, b18, b17, b16, b15, b14, b13, b12, b11, b10, b9, b8, b7, b6, b5, b4, b3, b2, b1, b0)\
 		((b26 << 26) |(b25 << 25) |(b24 << 24) |(b23 << 23) | (b22 << 22) | (b21 << 21) | (b20 << 20) | (b19 << 19) | (b18 << 18) | (b17  << 17 ) | (b16  << 16 ) |\
 				(b15 << 15) | (b14 << 14) | (b13 << 13) | (b12 << 12) | (b11 << 11) | (b10 << 10) | (b9  << 9 ) | (b8  << 8 ) |\
 				(b7  << 7 ) | (b6  << 6 ) | (b5  << 5 ) | (b4  << 4 ) | (b3  << 3 ) | (b2  << 2 ) | (b1  << 1 ) | (b0  << 0 ) )
-
-// Must define packword for each of the different bit-widths.
-const u32 bmp_saucer_16x7[] = { packword16(0, 0, 0, 0, 0, 1, 1, 1, 1,
-		1, 1, 0, 0, 0, 0, 0), packword16(0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-		0, 0, 0), packword16(0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0),
-		packword16(0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0), packword16(
-				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), packword16(0,
-				0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0), packword16(0, 0,
-				0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) };
 
 //Alien explosion
 const u32 bmp_alien_explosion_12x10[] = { packword12(0, 0, 0, 0, 0, 0,
@@ -156,7 +148,7 @@ const u32 bmp_tank_15x8[] = {
 		packword15(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
 		packword15(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
 		packword15(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-		packword15(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,	1, 1, 1, 1) };
+		packword15(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) };
 
 const u32 bmp_tank_explode1_15x8[] = {
 		packword15(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
@@ -164,7 +156,7 @@ const u32 bmp_tank_explode1_15x8[] = {
 		packword15(0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0),
 		packword15(0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0),
 		packword15(0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
-		packword15(0, 0, 1, 1, 1, 1, 1,	1, 1, 1, 1, 0, 0, 0, 0),
+		packword15(0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0),
 		packword15(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0),
 		packword15(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0) };
 
@@ -174,31 +166,46 @@ const u32 bmp_tank_explode2_15x8[] = {
 		packword15(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 		packword15(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0),
 		packword15(0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0),
-		packword15(0, 0, 1, 0, 0, 0, 1,	0, 0, 1, 0, 1, 0, 0, 0),
+		packword15(0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0),
 		packword15(0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0),
 		packword15(0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0) };
 
+const u32 bmp_tank_empty[] = {
+		packword15(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+		packword15(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+		packword15(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+		packword15(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+		packword15(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+		packword15(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+		packword15(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+		packword15(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) };
+
+const u32* bmp_tanks[] = { bmp_tank_15x8, bmp_tank_15x8,
+		bmp_tank_explode1_15x8, bmp_tank_explode2_15x8, bmp_tank_empty,
+		bmp_tank_explode2_15x8 };
 
 // Shape of the entire bunker.
-const u32 bmp_bunker_24x18[] = {
-		packword24(0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0),
-		packword24(0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0),
-		packword24(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0),
-		packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1),
-		packword24(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1) };
+const u32
+		bmp_bunker_24x18[] =
+				{
+						packword24(0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0),
+						packword24(0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0),
+						packword24(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0),
+						packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1),
+						packword24(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1) };
 
 const u32 bmp_bunker0_6x6[] = { packword6(0,0,0,1,1,1), packword6(0,0,1,1,1,1),
 		packword6(0,1,1,1,1,1), packword6(1,1,1,1,1,1), packword6(1,1,1,1,1,1),
@@ -282,107 +289,44 @@ const u32 bmp_bullet_straight_3x5[] = { packword3(0, 1, 0), packword3(0, 1,
 		0), packword3(0, 1, 0), packword3(0, 1, 0), packword3(0, 1, 0),
 		packword3(0, 1, 0) };
 
+const u32 number_one_4x7[] = { packword4(0,0,1,0), packword4(0,0,1,1),
+		packword4(0,0,1,0), packword4(0,0,1,0), packword4(0,0,1,0),
+		packword4(0,0,1,0), packword4(0,1,1,1) };
+const u32 number_two_4x7[] = { packword4(0,1,1,0), packword4(1,0,0,1),
+		packword4(1,0,0,0), packword4(1,1,1,0), packword4(0,0,0,1),
+		packword4(0,0,0,1), packword4(1,1,1,1) };
+const u32 number_three_4x7[] = { packword4(0,1,1,0), packword4(1,0,0,1),
+		packword4(1,0,0,0), packword4(1,1,1,0), packword4(1,0,0,0),
+		packword4(1,0,0,1), packword4(0,1,1,0) };
+const u32 number_four_4x7[] = { packword4(1,0,0,1), packword4(1,0,0,1),
+		packword4(1,0,0,1), packword4(1,1,1,1), packword4(1,0,0,0),
+		packword4(1,0,0,0), packword4(1,0,0,0) };
+const u32 number_five_4x7[] = { packword4(1,1,1,1), packword4(0,0,0,1),
+		packword4(0,0,0,1), packword4(0,1,1,1), packword4(1,0,0,0),
+		packword4(1,0,0,1), packword4(0,1,1,0) };
+const u32 number_six_4x7[] = { packword4(0,1,1,0), packword4(0,0,0,1),
+		packword4(0,0,0,1), packword4(0,1,1,1), packword4(1,0,0,1),
+		packword4(1,0,0,1), packword4(0,1,1,0) };
+const u32 number_seven_4x7[] = { packword4(1,1,1,1), packword4(1,0,0,0),
+		packword4(1,0,0,0), packword4(1,0,0,0), packword4(1,0,0,0),
+		packword4(1,0,0,0), packword4(1,0,0,0) };
+const u32 number_eight_4x7[] = { packword4(0,1,1,0), packword4(1,0,0,1),
+		packword4(1,0,0,1), packword4(0,1,1,0), packword4(1,0,0,1),
+		packword4(1,0,0,1), packword4(0,1,1,0) };
+const u32 number_nine_4x7[] = { packword4(0,1,1,0), packword4(1,0,0,1),
+		packword4(1,0,0,1), packword4(1,1,1,1), packword4(1,0,0,0),
+		packword4(1,0,0,0), packword4(0,1,1,0) };
 
-const u32 number_one_4x7[] = {
-		packword4(0,0,1,0),
-		packword4(0,0,1,1),
-		packword4(0,0,1,0),
-		packword4(0,0,1,0),
-		packword4(0,0,1,0),
-		packword4(0,0,1,0),
-		packword4(0,1,1,1)
-};
-const u32 number_two_4x7[] = {
-		packword4(0,1,1,0),
-		packword4(1,0,0,1),
-		packword4(1,0,0,0),
-		packword4(1,1,1,0),
-		packword4(0,0,0,1),
-		packword4(0,0,0,1),
-		packword4(1,1,1,1)
-};
-const u32 number_three_4x7[] = {
-		packword4(0,1,1,0),
-		packword4(1,0,0,1),
-		packword4(1,0,0,0),
-		packword4(1,1,1,0),
-		packword4(1,0,0,0),
-		packword4(1,0,0,1),
-		packword4(0,1,1,0)
-};
-const u32 number_four_4x7[] = {
-		packword4(1,0,0,1),
-		packword4(1,0,0,1),
-		packword4(1,0,0,1),
-		packword4(1,1,1,1),
-		packword4(1,0,0,0),
-		packword4(1,0,0,0),
-		packword4(1,0,0,0)
-};
-const u32 number_five_4x7[] = {
-		packword4(1,1,1,1),
-		packword4(0,0,0,1),
-		packword4(0,0,0,1),
-		packword4(0,1,1,1),
-		packword4(1,0,0,0),
-		packword4(1,0,0,1),
-		packword4(0,1,1,0)
-};
-const u32 number_six_4x7[] = {
-		packword4(0,1,1,0),
-		packword4(0,0,0,1),
-		packword4(0,0,0,1),
-		packword4(0,1,1,1),
-		packword4(1,0,0,1),
-		packword4(1,0,0,1),
-		packword4(0,1,1,0)
-};
-const u32 number_seven_4x7[] = {
-		packword4(1,1,1,1),
-		packword4(1,0,0,0),
-		packword4(1,0,0,0),
-		packword4(1,0,0,0),
-		packword4(1,0,0,0),
-		packword4(1,0,0,0),
-		packword4(1,0,0,0)
-};
-const u32 number_eight_4x7[] = {
-		packword4(0,1,1,0),
-		packword4(1,0,0,1),
-		packword4(1,0,0,1),
-		packword4(0,1,1,0),
-		packword4(1,0,0,1),
-		packword4(1,0,0,1),
-		packword4(0,1,1,0)
-};
-const u32 number_nine_4x7[] = {
-		packword4(0,1,1,0),
-		packword4(1,0,0,1),
-		packword4(1,0,0,1),
-		packword4(1,1,1,1),
-		packword4(1,0,0,0),
-		packword4(1,0,0,0),
-		packword4(0,1,1,0)
-};
-
-const u32 number_zero_4x7[] = {
-		packword4(0,1,1,0),
-		packword4(1,0,0,1),
-		packword4(1,0,0,1),
-		packword4(1,0,0,1),
-		packword4(1,0,0,1),
-		packword4(1,0,0,1),
-		packword4(0,1,1,0)
-};
-
+const u32 number_zero_4x7[] = { packword4(0,1,1,0), packword4(1,0,0,1),
+		packword4(1,0,0,1), packword4(1,0,0,1), packword4(1,0,0,1),
+		packword4(1,0,0,1), packword4(0,1,1,0) };
 
 #define NUMBERS 10
 const u32* bmp_numbers[NUMBERS] = { number_zero_4x7, number_one_4x7,
 		number_two_4x7, number_three_4x7, number_four_4x7, number_five_4x7,
 		number_six_4x7, number_seven_4x7, number_eight_4x7, number_nine_4x7 };
 // This is for the drawing of the alien saucer sprite.
-const u32 saucer_16x7[] = {
-		packword16(0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0),
+const u32 bmp_saucer_16x7[] = { packword16(0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0),
 		packword16(0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0),
 		packword16(0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0),
 		packword16(0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0),
@@ -391,7 +335,7 @@ const u32 saucer_16x7[] = {
 		packword16(0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0) };
 
 //This is for drawing the words
-const u32 word_lives_27x8[] = {
+const u32 bmp_word_lives_27x8[] = {
 		packword27(0,1,1,1,0,0,1,1,1,1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,1,0,0),
 		packword27(0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,1,0,0),
 		packword27(0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,1,0,0),
@@ -401,7 +345,7 @@ const u32 word_lives_27x8[] = {
 		packword27(0,0,1,1,1,0,1,1,1,1,0,0,0,0,1,0,0,0,0,1,0,1,1,1,1,0,0),
 		packword27(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0) };
 
-const u32 word_score_27x8[] = {
+const u32 bmp_word_score_27x8[] = {
 		packword27(1,1,1,1,0,0,1,1,1,0,1,1,1,1,0,1,1,1,0,0,1,1,1,0,0,0,0),
 		packword27(0,0,0,1,0,1,0,0,1,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0),
 		packword27(0,0,0,1,0,1,0,0,1,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0),
@@ -411,7 +355,7 @@ const u32 word_score_27x8[] = {
 		packword27(1,1,1,1,0,1,0,0,1,0,1,1,1,1,0,1,1,1,0,0,0,1,1,1,0,0,0),
 		packword27(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0) };
 
-const u32 word_game_27x8[] = {
+const u32 bmp_word_game_27x8[] = {
 		packword27(1,1,1,1,0,1,0,0,0,0,0,1,0,0,1,1,1,0,0,0,1,1,1,1,0,0,0),
 		packword27(0,0,0,1,0,1,1,0,0,0,1,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0),
 		packword27(0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0),
@@ -421,7 +365,7 @@ const u32 word_game_27x8[] = {
 		packword27(1,1,1,1,0,1,0,0,0,0,0,1,0,1,0,0,0,1,0,0,1,1,1,1,0,0,0),
 		packword27(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0) };
 
-const u32 word_over_27x8[] = {
+const u32 bmp_word_over_27x8[] = {
 		packword27(0,1,1,1,0,1,1,1,1,0,1,0,0,0,0,0,1,0,1,1,1,1,1,0,0,0,0),
 		packword27(1,0,0,1,0,0,0,0,1,0,1,0,0,0,0,0,1,0,1,0,0,0,1,0,0,0,0),
 		packword27(1,0,0,1,0,0,0,0,1,0,1,0,0,0,0,0,1,0,1,0,0,0,1,0,0,0,0),

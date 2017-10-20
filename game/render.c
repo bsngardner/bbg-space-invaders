@@ -85,14 +85,16 @@ static void draw_bitmap(const u32* bmp, u32 color, s16 bmp_x, s16 bmp_y,
 static inline void set_point(s32 x, s32 y, u32 color);
 static void drawGreenLine(void);
 static void update_score(u32 score);
+void update_bmp_row(s16 x, s16 y, u32 old, u32 new, u32 color);
 
 //Macros
 #define clr_point(x,y) set_point((x),(y),GAME_BACKGROUND)
 
 //Static variables
 static bunker_t prev_bunkers[GAME_BUNKER_COUNT];
-static point_t prev_tank_block = { RENDER_TANK_X, RENDER_TANK_Y };
 static point_t prev_saucer_block = { SAUCER_X, SAUCER_Y };
+static tank_t prev_tank = { .pos = { GAME_TANK_STARTX, GAME_TANK_STARTY },
+		.lives = 0, .changed = 0, .state = INIT, .missile = { { 0, 0 }, 0 } };
 
 u32* getFrame() {
 	return frame0;
@@ -129,11 +131,6 @@ void render_init() {
 		//				GAME_BUNKER_POS + GAME_BUNKER_SEP * bunker_num, GAME_BUNKER_Y,
 		//				BMP_BUNKER_W, BMP_BUNKER_H);
 	}
-
-	//Draw tank TODO this should not happen until the controller calls
-	//	render the first time
-	render_tank();
-
 	//Draw Red Saucer
 	render_saucer();
 
@@ -146,7 +143,7 @@ void render_init() {
 			TANK_WIDTH, TANK_HEIGHT);
 
 	//Draw Score
-	draw_bitmap(word_score_27x8, COLOR_WHITE, SCORE_X, TOP_SCREEN, WORDS_W,
+	draw_bitmap(bmp_word_score_27x8, COLOR_WHITE, SCORE_X, TOP_SCREEN, WORDS_W,
 			WORDS_H);
 	u32 offset = WORDS_W + SCORE_X;
 	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_1, TOP_SCREEN,
@@ -159,13 +156,14 @@ void render_init() {
 			BMP_NUMBER_W, BMP_NUMBER_H);
 
 	//Draw Live
-	draw_bitmap(word_lives_27x8, COLOR_WHITE, LIVES_X, TOP_SCREEN, WORDS_W,
+	draw_bitmap(bmp_word_lives_27x8, COLOR_WHITE, LIVES_X, TOP_SCREEN, WORDS_W,
 			WORDS_H);
 
 	//Draw green line
 	drawGreenLine();
 
 }
+
 #define NUMBER_1 1
 #define NUMBER_2 2
 #define NUMBER_3 3
@@ -209,64 +207,65 @@ static void update_score(u32 score) {
 #define GAME_Y 120 //start y pos
 #define OVER_X 160 //start x pos for over word
 void render_game_over(void) {
-	draw_bitmap(word_game_27x8, COLOR_WHITE, GAME_X, GAME_Y, WORDS_W, WORDS_H);
-	draw_bitmap(word_over_27x8, COLOR_WHITE, OVER_X, GAME_Y, WORDS_W, WORDS_H);
+	draw_bitmap(bmp_word_game_27x8, COLOR_WHITE, GAME_X, GAME_Y, WORDS_W,
+			WORDS_H);
+	draw_bitmap(bmp_word_over_27x8, COLOR_WHITE, OVER_X, GAME_Y, WORDS_W,
+			WORDS_H);
 	char input;
 	input = getchar();
 }
 
-void render_tank(void) {
-	draw_bitmap(bmp_tank_15x8, COLOR_GREEN, RENDER_TANK_X, RENDER_TANK_Y,
-				BMP_TANK_W, BMP_TANK_H);
-	point_t tank_block = { RENDER_TANK_X, RENDER_TANK_Y };
-	memcpy(&prev_tank_block, &tank_block, sizeof(point_t));
-}
-
 void render_saucer(void) {
-	draw_bitmap(saucer_16x7, COLOR_RED, SAUCER_X, SAUCER_Y, SAUCER_WIDTH,
-				SAUCER_HEIGHT);
+	draw_bitmap(bmp_saucer_16x7, COLOR_RED, SAUCER_X, SAUCER_Y, SAUCER_WIDTH,
+			SAUCER_HEIGHT);
 	point_t saucer_block = { SAUCER_X, SAUCER_Y };
 	memcpy(&prev_saucer_block, &saucer_block, sizeof(point_t));
 }
 
 void render_saucer_death(u16 x, u16 y) {
 	xil_printf("POSITION %d %d\r\n", x, y);
-	draw_bitmap(saucer_16x7, COLOR_BLACK, x, y, SAUCER_WIDTH,
-				SAUCER_HEIGHT);
+	draw_bitmap(bmp_saucer_16x7, COLOR_BLACK, x, y, SAUCER_WIDTH, SAUCER_HEIGHT);
 }
 
 void render_saucer_points(u16 x, u16 y, u16 points, u8 on) {
 	u32 color;
-	if(on)
+	if (on)
 		color = COLOR_WHITE;
 	else
 		color = COLOR_BLACK;
 
 	u32 hundred = (points) / HUNDRED;
-	u32 ten = (points-hundred*HUNDRED) / TEN;
+	u32 ten = (points - hundred * HUNDRED) / TEN;
 	u16 offset = BMP_NUMBER_W + NUMBER_2;
-	if(hundred!=0) {
-		draw_bitmap(bmp_numbers[hundred], color, x, y, BMP_NUMBER_W, BMP_NUMBER_H);
+	if (hundred != 0) {
+		draw_bitmap(bmp_numbers[hundred], color, x, y, BMP_NUMBER_W,
+				BMP_NUMBER_H);
 	}
-	draw_bitmap(bmp_numbers[ten], color, x + offset, y, BMP_NUMBER_W, BMP_NUMBER_H);
-	draw_bitmap(bmp_numbers[ten], color, x + offset + offset, y, BMP_NUMBER_W, BMP_NUMBER_H);
+	draw_bitmap(bmp_numbers[ten], color, x + offset, y, BMP_NUMBER_W,
+			BMP_NUMBER_H);
+	draw_bitmap(bmp_numbers[ten], color, x + offset + offset, y, BMP_NUMBER_W,
+			BMP_NUMBER_H);
 }
 
 void render_explosion_1(u16 x, u16 y) {
-	xil_printf("EXPLODE ONCE %d %d\r\n", x,y);
+	xil_printf("EXPLODE ONCE %d %d\r\n", x, y);
 	draw_bitmap(bmp_tank_15x8, COLOR_BLACK, x, y, BMP_TANK_W, BMP_TANK_H);
-	draw_bitmap(bmp_tank_explode1_15x8, COLOR_GREEN, x, y, BMP_TANK_W, BMP_TANK_H);
+	draw_bitmap(bmp_tank_explode1_15x8, COLOR_GREEN, x, y, BMP_TANK_W,
+			BMP_TANK_H);
 }
 
 void render_explosion_2(u16 x, u16 y) {
-	xil_printf("EXPLODE TWICE %d %d\r\n", x,y);
-	draw_bitmap(bmp_tank_explode1_15x8, COLOR_BLACK, x, y, BMP_TANK_W, BMP_TANK_H);
-	draw_bitmap(bmp_tank_explode2_15x8, COLOR_GREEN, x, y, BMP_TANK_W, BMP_TANK_H);
+	xil_printf("EXPLODE TWICE %d %d\r\n", x, y);
+	draw_bitmap(bmp_tank_explode1_15x8, COLOR_BLACK, x, y, BMP_TANK_W,
+			BMP_TANK_H);
+	draw_bitmap(bmp_tank_explode2_15x8, COLOR_GREEN, x, y, BMP_TANK_W,
+			BMP_TANK_H);
 }
 
 void render_explosion_3(u16 x, u16 y) {
-	xil_printf("EXPLODE THREE %d %d\r\n", x,y);
-	draw_bitmap(bmp_tank_explode2_15x8, COLOR_BLACK, x, y, BMP_TANK_W, BMP_TANK_H);
+	xil_printf("EXPLODE THREE %d %d\r\n", x, y);
+	draw_bitmap(bmp_tank_explode2_15x8, COLOR_BLACK, x, y, BMP_TANK_W,
+			BMP_TANK_H);
 }
 //Updates alien row when shifted, no more than 2. This limitation is from the
 //	padding I could put on the bitmaps.  There is are 2 pixels on either side
@@ -476,51 +475,31 @@ static void update_alien_block(alien_block_t* alien_block) {
 }
 
 //Update tank position
-static void update_tank(point_t* tank_block) {
+static void update_tank(tank_t* tank) {
+
+	if (!tank->changed)
+		return;
 	//Tank is initially drawn in init, so prev_tank can be initialized to
 	//	 the start location of the tank
+	const u32* old_bmp = bmp_tanks[prev_tank.state];
+	const u32* tank_bmp = bmp_tanks[tank->state]; //Get tank bitmap
+	u16 tank_y = tank->pos.y; //This doesnt change
+	u16 y; //This does, as we move down each pixel row in the tank
+	s16 offset = tank->pos.x - prev_tank.pos.x; //Shift distance
 
-	if (tank_block->x == prev_tank_block.x)
-		return;
-	const u32* tank_bmp = bmp_tank_15x8; //Get tank bitmap
-	u16 y = tank_block->y; //This doesnt change
-	u16 tank_y; //This does, as we move down each pixel row in the tank
-	for (tank_y = 0; tank_y < BMP_TANK_H; tank_y++) { //Iterate over pixel rows in tank
-		s16 offset = tank_block->x - prev_tank_block.x; //Shift distance
-		u32 delta; //These are the same as in update_alien_row
-		u32 set_delta;
-		u32 reset_delta;
-		u32 new = tank_bmp[tank_y];
-		u32 prev = tank_bmp[tank_y];
-		if (offset > 0) {
-			new = new << offset;
-		} else if (offset < 0) {
-			offset = -offset;
-			new = new >> offset;
-		}
-		delta = new ^ prev;
+	for (y = 0; y < BMP_TANK_H; y++) { //Iterate over pixel rows in tank
 
-		u16 x;
-		x = prev_tank_block.x;
-		set_delta = delta & ~prev;
-		reset_delta = delta & prev;
+		u32 new = tank_bmp[y];
+		u32 prev = old_bmp[y];
+		new = (offset > 0) ? (new << offset) : (new >> -offset);
 
-		while (set_delta || reset_delta) {
-			if (set_delta & BIT0) {
-				set_point(x, y + tank_y, COLOR_GREEN);
-			}
-			if (reset_delta & BIT0) {
-				clr_point (x,y+tank_y);
-			}
-
-			reset_delta >>= 1;
-			set_delta >>= 1;
-			x++;
-		}
+		update_bmp_row(prev_tank.pos.x, y + tank_y, prev, new, COLOR_GREEN);
 	}
-	memcpy(&prev_tank_block, tank_block, sizeof(point_t));
-
+	tank->changed = 0;
+	prev_tank.pos.x = tank->pos.x;
+	prev_tank.state = tank->state;
 }
+
 #define SAUCER_X 321
 #define SAUCER_Y 15
 //Update tank position
@@ -673,17 +652,20 @@ static void update_missiles(tank_t * tank, alien_missiles_t* alien_missiles) {
 #define LIFE_COUNT 3 //number of tank lives
 #define LIFE_DEC -1
 #define LIFE_INC 1
+static u8 prev_lives = LIFE_COUNT;
 void update_tank_life_draw(u8 tank_lives) {
-	static u8 prev_lives = 0;
+
+	//xil_printf("TANK LIVES %d %d\r\n", tank_lives, prev_lives);
 	if (tank_lives == prev_lives)
 		return;
 	u16 life = prev_lives;
 	s16 delta = (tank_lives > prev_lives) ? (LIFE_INC) : (LIFE_DEC);
 	u16 offset; //create the offset for the tanks
 	for (; life != tank_lives; life += delta) {
-		offset = TANK_LIFE_1 + life * TANK_SPACE; //calc x pos offset
+		offset = TANK_LIFE_1 + tank_lives * TANK_SPACE; //calc x pos offset
 		//draw black
 		if (delta < 0) {
+
 			draw_bitmap(bmp_tank_15x8, COLOR_BLACK, offset, TOP_SCREEN,
 					TANK_WIDTH, TANK_HEIGHT);
 		} else {
@@ -691,16 +673,16 @@ void update_tank_life_draw(u8 tank_lives) {
 					TANK_WIDTH, TANK_HEIGHT);
 		}
 	}
+	prev_lives = tank_lives;
 }
 
 //Externally accessible render function. Calls local functions to render graphics
 void render(tank_t* tank, alien_block_t* alienBlock,
 		alien_missiles_t* alien_missiles, bunker_t* bunkers, saucer_t* saucer,
-		u8 tank_lives, u32 score) {
+		u32 score) {
 
 	update_alien_block(alienBlock);
-	if(!game_controller_tank_life())
-		update_tank(&tank->pos);
+	update_tank(tank);
 
 	update_missiles(tank, alien_missiles);
 
@@ -708,7 +690,7 @@ void render(tank_t* tank, alien_block_t* alienBlock,
 
 	update_saucer(&saucer->pos);
 
-	update_tank_life_draw(tank_lives);
+	update_tank_life_draw(tank->lives);
 
 	update_score(score);
 }
