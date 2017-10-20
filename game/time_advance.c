@@ -22,13 +22,13 @@ static enum {
 	KILL_SAUCER = 8
 } state = RESET; //enum for declaring the states
 
-#define ALIEN_PERIOD 16 //freqeuency of alien movement
-#define BULLET_PERIOD 2 //frequency of bullet movement
-#define MISSILE_PERIOD 5 //frequency of missile movement
-#define SAUCER_PERIOD 6 //frequency of saucer movement
-#define SAUCER_INIT 500 //initial frequency of saucer
-#define ALIEN_MISS_PERIOD 75 //frequency of alien missile shooting
-#define ALIEN_MISS_INIT 400 //initial frequency of alien missile shooting
+#define ALIEN_PERIOD 12 //freqeuency of alien movement
+#define BULLET_PERIOD 3 //frequency of bullet movement
+#define MISSILE_PERIOD 4 //frequency of missile movement
+#define SAUCER_PERIOD 8 //frequency of saucer movement
+#define SAUCER_INIT 200 //initial frequency of saucer
+#define ALIEN_MISS_PERIOD 100 //frequency of alien missile shooting
+#define ALIEN_MISS_INIT 200 //initial frequency of alien missile shooting
 #define EXPLODE_PERIOD 10
 #define EXPLODE_WAIT 25
 #define SAUCER_KILL_PERIOD 15
@@ -81,9 +81,9 @@ void time_advance_tick() {
 	case MOVE_SAUCER:
 		//check to see if the saucer is active
 		if(game_controller_saucer_life()) {
-		if(game_controller_saucer_state()) {
-			game_controller_move_saucer(); //if active then move
-		} else
+			if(game_controller_saucer_state()) {
+				game_controller_move_saucer(); //if active then move
+			} else
 			game_controller_saucer_state_toggle(); //else toggle to active
 		}
 		break;
@@ -135,7 +135,7 @@ void time_advance_tick() {
 		state = IDLE; //return to idle
 		break;
 	case MOVE_SAUCER:
-		if(game_controller_saucer_state()) //if the saucer is active
+		if (game_controller_saucer_state()) //if the saucer is active
 			saucer_period = SAUCER_PERIOD; //reset to the normal movement period
 		else {
 			saucer_period = saucer_pause(); //if inactive reset to a random wait period
@@ -164,6 +164,7 @@ void time_advance_tick() {
 #define RANDOM_LOW_RANGE 500 //lower bound
 u32 saucer_pause() {
 	//generate random number for the saucer wait period
-	u32 random_no = (rand() % (RANDOM_UP_RANGE - RANDOM_LOW_RANGE ) + RANDOM_LOW_RANGE);
+	u32 random_no = (rand() % (RANDOM_UP_RANGE - RANDOM_LOW_RANGE)
+			+ RANDOM_LOW_RANGE);
 	return random_no;
 }

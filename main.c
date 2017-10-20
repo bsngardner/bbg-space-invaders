@@ -26,8 +26,9 @@
 #include "time_advance.h"
 
 //Defines
-#define MAX_IDLE_COUNT 66651
-
+//#define MAX_IDLE_COUNT 66651	//For 1,000,000
+//#define MAX_IDLE_COUNT 13320	//For 200,000
+#define MAX_IDLE_COUNT 33320	//For 500,000
 //Variables
 u32 idle_count = 0;
 u32 avg_util = 0;
@@ -38,8 +39,8 @@ u32 max_avg_util = 0;
 void interrupt_init();
 void interrupt_handler_dispatcher();
 
-#define DEBUG
-#define PRINT_UTIL
+//#define DEBUG
+//#define PRINT_UTIL
 void print(char *str);
 void init();
 
@@ -54,28 +55,35 @@ int main() {
 		}
 		timer_flag = 0;
 
+		//xil_printf("idle:%d\n\r", idle_count);
+
 #ifdef DEBUG
+
 		if (timer_missed) {
 			print("Timer missed!\n\r");
 			timer_missed = 0;
 		}
-		idle_count = MAX_IDLE_COUNT - idle_count;
-
-		avg_util = (avg_util - (avg_util >> 2)) + (idle_count >> 2);
-		if (!(--i)) {
-			//xil_printf("utilization: %d\n\r", avg_util);
-			i = 50;
-		}
-
 		if (idle_count > max_util) {
 			max_util = idle_count;
-			//xil_printf("Max utilization: %d\n\r", max_util);
+			xil_printf("Max utilization: %d\n\r", max_util);
 		}
 
-		if (avg_util > max_avg_util) {
-			max_avg_util = avg_util;
-			//xil_printf("Max average utilization: %d\n\r", max_avg_util);
+		idle_count = MAX_IDLE_COUNT - idle_count;
+		//
+		//		avg_util = (avg_util - (avg_util >> 2)) + (idle_count >> 2);
+		//		if (!(--i)) {
+		//			xil_printf("utilization: %d\n\r", avg_util);
+		//			i = 50;
+		//		}
+		if (idle_count > avg_util) {
+			avg_util = idle_count;
 		}
+		if (!(--i)) {
+			xil_printf("utilization: %d\n\r", avg_util);
+			i = 50;
+			avg_util = 0;
+		}
+
 #endif
 
 		//Tick state machines
