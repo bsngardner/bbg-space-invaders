@@ -10,7 +10,7 @@
 #include "gpio.h"
 
 //Defines
-#define DEBOUNCE_COUNT 12
+#define DEBOUNCE_COUNT 8
 
 //Variables
 volatile u32 debounce_cnt = 0;
@@ -22,7 +22,7 @@ void timer_interrupt_handler() {
 		timer_missed = 1;
 	}
 	timer_flag = 1;
-
+	print("t");
 	if (debounce_cnt && !(--debounce_cnt)) {
 		gpio_button_flag = 1;
 	}

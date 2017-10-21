@@ -37,7 +37,7 @@
 #define packword12(b11,b10,b9,b8,b7,b6,b5,b4,b3,b2,b1,b0)	((	\
 (b11 << 11) | (b10 << 10) | (b9  << 9 ) | (b8  << 8 ) |						  \
  (b7  << 7 ) | (b6  << 6 ) | (b5  << 5 ) | (b4  << 4 ) | (b3  << 3 ) | (b2  << 2 ) | (b1  << 1 ) | (b0  << 0 ) 	\
- ) << 3)	//Padding
+ ) << 2)	//Padding
 #define packword6(b5,b4,b3,b2,b1,b0)	(	\
 (b5  << 5 ) | (b4  << 4 ) | (b3  << 3 ) | (b2  << 2 ) | (b1  << 1 ) | (b0  << 0 ) 	\
  )
@@ -49,12 +49,13 @@
 (b2 << 2) | (b1 << 1) | (b0 << 0) \
 )
 
-const point_t bmp_tank_dim = { BMP_TANK_W, BMP_TANK_H };
-const point_t bmp_alien_dim = { BMP_ALIEN_W, BMP_ALIEN_H };
-const point_t bmp_bunker_dim = { BMP_BUNKER_W, BMP_BUNKER_H };
-const point_t bmp_bunker_block_dim = { BMP_BUNKER_BLOCK_W, BMP_BUNKER_BLOCK_H };
-const point_t bmp_missile_dim = { BMP_BULLET_W, BMP_BULLET_H };
-const point_t bmp_saucer_dim = { BMP_SAUCER_W, BMP_SAUCER_H };
+const point_t bmp_tank_dim = { { BMP_TANK_W, BMP_TANK_H } };
+const point_t bmp_alien_dim = { { BMP_ALIEN_W, BMP_ALIEN_H } };
+const point_t bmp_bunker_dim = { { BMP_BUNKER_W, BMP_BUNKER_H } };
+const point_t bmp_bunker_block_dim = {
+		{ BMP_BUNKER_BLOCK_W, BMP_BUNKER_BLOCK_H } };
+const point_t bmp_missile_dim = { { BMP_BULLET_W, BMP_BULLET_H } };
+const point_t bmp_saucer_dim = { { BMP_SAUCER_W, BMP_SAUCER_H } };
 
 //define packword 27, for the words score and lives.
 #define packword27(b26, b25, b24, b23, b22, b21, b20, b19, b18, b17, b16, b15, b14, b13, b12, b11, b10, b9, b8, b7, b6, b5, b4, b3, b2, b1, b0)\
@@ -180,9 +181,8 @@ const u32 bmp_tank_empty[] = {
 		packword15(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 		packword15(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) };
 
-const u32* bmp_tanks[] = { bmp_tank_15x8, bmp_tank_15x8,
-		bmp_tank_explode1_15x8, bmp_tank_explode2_15x8, bmp_tank_empty,
-		bmp_tank_explode2_15x8 };
+const u32* bmp_tanks[] = { bmp_tank_empty, bmp_tank_15x8,
+		bmp_tank_explode1_15x8, bmp_tank_explode2_15x8 };
 
 // Shape of the entire bunker.
 const u32
@@ -288,6 +288,9 @@ const u32** bmp_alien_missiles[] = { bmp_alien_missiles_cross,
 const u32 bmp_bullet_straight_3x5[] = { packword3(0, 1, 0), packword3(0, 1,
 		0), packword3(0, 1, 0), packword3(0, 1, 0), packword3(0, 1, 0),
 		packword3(0, 1, 0) };
+
+const u32 bmp_empty_projectile[] = { packword3(0, 0, 0), packword3(0, 0, 0),
+		packword3(0, 0, 0), packword3(0, 0, 0), packword3(0, 0, 0) };
 
 const u32 number_one_4x7[] = { packword4(0,0,1,0), packword4(0,0,1,1),
 		packword4(0,0,1,0), packword4(0,0,1,0), packword4(0,0,1,0),

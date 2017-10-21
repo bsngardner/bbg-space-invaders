@@ -22,8 +22,8 @@
 #include "gpio.h"
 #include "timer.h"
 #include "render.h"
-#include "game_controller.h"
-#include "time_advance.h"
+#include "control.h"
+#include "timing.h"
 
 //Defines
 //#define MAX_IDLE_COUNT 66651	//For 1,000,000
@@ -47,13 +47,14 @@ void init();
 int main() {
 	u32 i = 10;
 	init();
-
 	while (1) {
 		idle_count = 0;
 		while (timer_flag == 0) {
 			idle_count++;
+			print("i");
 		}
 		timer_flag = 0;
+		print("s\n\r");
 
 		//xil_printf("idle:%d\n\r", idle_count);
 
@@ -86,9 +87,11 @@ int main() {
 
 #endif
 
+
 		//Tick state machines
-		time_advance_tick();
-		game_controller_run();
+		timing_game_tick();
+
+
 		//		game_controller_run(); //run the game
 	}
 
@@ -107,7 +110,7 @@ void init() {
 	microblaze_enable_interrupts();
 
 	render_init();
-	game_controller_init(); //initialize the game
+	control_init(); //initialize the game
 }
 
 void interrupt_init() {

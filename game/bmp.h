@@ -23,7 +23,7 @@
 #define BMP_MID BMP_TANK_W/2
 
 #define BMP_ALIEN_H 8
-#define BMP_ALIEN_W 18
+#define BMP_ALIEN_W 16
 
 #define BMP_BUNKER_MAX 4
 #define BMP_BUNKER_STATES 5
@@ -78,6 +78,7 @@ extern const u32 bmp_alien_missile_cross2_3x5[];
 extern const u32 bmp_alien_missile_diagonal1_3x5[];
 extern const u32 bmp_alien_missile_diagonal2_3x5[];
 extern const u32 bmp_bullet_straight_3x5[];
+extern const u32 bmp_empty_projectile[];
 extern const u32** bmp_alien_missiles[];
 
 // Shape of the entire bunker.

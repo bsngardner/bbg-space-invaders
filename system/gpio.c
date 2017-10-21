@@ -33,11 +33,12 @@ void gpio_init() {
 
 void gpio_interrupt_handler() {
 
+
 	// Clear the GPIO interrupt.
 	XGpio_InterruptGlobalDisable(&gpPB); // Turn off all PB interrupts for now.
 	button_state = XGpio_DiscreteRead(&gpPB, 1); // Get the current state of the buttons.
 
-	timer_set_debounce(); //Initiate debouncing
+	//timer_set_debounce(); //Initiate debouncing
 
 	XGpio_InterruptClear(&gpPB, 0xFFFFFFFF); // Ack the PB interrupt.
 	XGpio_InterruptGlobalEnable(&gpPB); // Re-enable PB interrupts.
