@@ -25,6 +25,7 @@ void control_tank_move(direction_t dir);
 void control_alien_fire_missile();
 void control_kill_alien(u16, u16);
 void control_update_alien_position(void); //function that updates the alien block position
+void control_tank_explode();
 
 void control_update_missiles(void); //update missile positions
 void control_saucer_move(void); //move the flying saucer

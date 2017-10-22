@@ -11,7 +11,7 @@
 void timer_interrupt_handler();
 void timer_set_debounce();
 
-extern volatile u32 timer_flag;
-extern volatile u32 timer_missed;
+extern volatile u16 timer_flag;
+extern volatile u16 timer_missed;
 
 #endif /* TIMER_H_ */

@@ -89,9 +89,14 @@ void render_init() {
 	vdma_init(frame0, frame1);
 	// Just paint some large red, green, blue, and white squares in different
 	// positions of the image for each frame in the buffer (framePointer0 and framePointer1).
+	render_restart();
 
+}
+
+void render_restart() {
 	int row = 0, col = 0;
 	//Init screen to background color
+
 	for (row = 0; row < GAME_SCREEN_H; row++) {
 		for (col = 0; col < GAME_SCREEN_W; col++) {
 			frame0[row * GAME_SCREEN_W + col] = GAME_BACKGROUND;
@@ -117,11 +122,11 @@ void render_init() {
 	prev_tank.pos.x = GAME_TANK_STARTX;
 	prev_tank.pos.y = GAME_TANK_STARTY;
 	prev_tank.state = EMPTY;
+	prev_lives = 0;
 
 	prev_tank.missile.pos.x = OOR;
 	prev_tank.missile.pos.y = OOR;
 	prev_tank.missile.active = 0;
-
 
 	//Draw Score
 	draw_bitmap(bmp_word_score_27x8, COLOR_WHITE, SCORE_X, TOP_SCREEN, WORDS_W,
@@ -136,15 +141,22 @@ void render_init() {
 	draw_bitmap(number_zero_4x7, COLOR_GREEN, offset + SCORE_GAP_4, TOP_SCREEN,
 			BMP_NUMBER_W, BMP_NUMBER_H);
 
-
 	//Draw Live
 	draw_bitmap(bmp_word_lives_27x8, COLOR_WHITE, LIVES_X, TOP_SCREEN, WORDS_W,
 			WORDS_H);
 
-
 	//Draw green line
 	drawGreenLine();
+}
 
+#define GAME_X 130 //start x pos for game word
+#define GAME_Y 120 //start y pos
+#define OVER_X 160 //start x pos for over word
+void render_gameover() {
+	draw_bitmap(bmp_word_game_27x8, COLOR_WHITE, GAME_X, GAME_Y, WORDS_W,
+			WORDS_H);
+	draw_bitmap(bmp_word_over_27x8, COLOR_WHITE, OVER_X, GAME_Y, WORDS_W,
+			WORDS_H);
 }
 
 #define NUMBER_1 1
@@ -186,37 +198,6 @@ static void update_score(u32 score) {
 	}
 	prev_score = score;
 }
-#define GAME_X 130 //start x pos for game word
-#define GAME_Y 120 //start y pos
-#define OVER_X 160 //start x pos for over word
-void render_game_over(void) {
-	draw_bitmap(bmp_word_game_27x8, COLOR_WHITE, GAME_X, GAME_Y, WORDS_W,
-			WORDS_H);
-	draw_bitmap(bmp_word_over_27x8, COLOR_WHITE, OVER_X, GAME_Y, WORDS_W,
-			WORDS_H);
-	char input;
-	input = getchar();
-}
-void render_explosion_1(u16 x, u16 y) {
-	xil_printf("EXPLODE ONCE %d %d\r\n", x, y);
-	draw_bitmap(bmp_tank_15x8, COLOR_BLACK, x, y, BMP_TANK_W, BMP_TANK_H);
-	draw_bitmap(bmp_tank_explode1_15x8, COLOR_GREEN, x, y, BMP_TANK_W,
-			BMP_TANK_H);
-}
-
-void render_explosion_2(u16 x, u16 y) {
-	xil_printf("EXPLODE TWICE %d %d\r\n", x, y);
-	draw_bitmap(bmp_tank_explode1_15x8, COLOR_BLACK, x, y, BMP_TANK_W,
-			BMP_TANK_H);
-	draw_bitmap(bmp_tank_explode2_15x8, COLOR_GREEN, x, y, BMP_TANK_W,
-			BMP_TANK_H);
-}
-
-void render_explosion_3(u16 x, u16 y) {
-	xil_printf("EXPLODE THREE %d %d\r\n", x, y);
-	draw_bitmap(bmp_tank_explode2_15x8, COLOR_BLACK, x, y, BMP_TANK_W,
-			BMP_TANK_H);
-}
 
 #define ALIENS_START 0
 #define ALIENS_END 10
@@ -244,47 +225,32 @@ static void update_alien_row(alien_block_t* alien_block,
 	u16 alien_y;
 	for (alien_y = 0; alien_y < BMP_ALIEN_H; alien_y++) {
 		s16 offset = alien_block->pos.x - prev_block->pos.x; //shift distance. No more than 2
-		u32 delta; //Holds delta between current row of drawn pixels and the shifted pixels
-		u32 set_delta; //Holds pixels that need to be set
-		u32 reset_delta; //Holds pixels that need to be cleared
 		u32 new = new_alien[alien_y]; //pixels that will be shifted
 		u32 prev = prev_alien[alien_y]; //Pixels currently drawn on screen
-		if (offset > 0) { //Shift in the right direction
-			new = new << offset;
-		} else if (offset < 0) {
-			offset = -offset;
-			new = new >> offset;
-		}
-		delta = new ^ prev; //Compute delta
+		new = (offset > 0) ? (new << offset) : (new >> -offset);
 
-		u16 x; //Holds x coord to draw at.
+		u16 x = prev_block->pos.x; //Holds x coord to draw at.
 		u16 n; //Current alien in the row
-		for (n = ALIENS_START; n <= ALIENS_END; n++) {
-			x = prev_block->pos.x + n * GAME_ALIEN_SEPX;
-			if (check(alien_block->alien_status[row],n)) { //Only draw alien if not dead
-				set_delta = delta & ~prev;
-				reset_delta = delta & prev;
+		for (n = ALIENS_START; n <= ALIENS_END; n++, x += GAME_ALIEN_SEPX) {
+			if (alien_block->row_col.x == n && alien_block->row_col.y == row) {
+				u32 lnew = (offset > 0) ? (bmp_alien_explosion_12x10[alien_y]
+						<< offset) : (bmp_alien_explosion_12x10[alien_y]
+						>> -offset);
+				u32 lprev;
+				if (prev_block->row_col.x == n && prev_block->row_col.y == row) {
+					lprev = bmp_alien_explosion_12x10[alien_y];
+				} else {
+					lprev = prev;
+				}
+				update_bmp_row(x, y + alien_y, lprev, lnew, ALIEN_COLOR);
+			} else if (check(alien_block->alien_status[row],n)) { //Only draw alien if not dead
+				update_bmp_row(x, y + alien_y, prev, new, ALIEN_COLOR);
 			} else if (check(prev_block->alien_status[row],n)) {
-				reset_delta = prev;
-				set_delta = 0;
-			} else {
-				continue; //If the alien is dead, go to the next alien
-			}
-
-			while (set_delta || reset_delta) { //Set pixels as long as there is something to change
-				if (check(set_delta, 0)) { //Read at bit0
-					set_point(x, y + alien_y, ALIEN_COLOR); //here y is global y of alien
-					// alien_y is local y of alien
-				}
-				if (check(reset_delta, 0)) { //Same as above
-					clr_point (x,y + alien_y);
-				}
-
-				reset_delta >>= 1; //Shift out bit
-				set_delta >>= 1;
-				x++; //move x
+				update_bmp_row(x, y + alien_y,
+						bmp_alien_explosion_12x10[alien_y], 0, ALIEN_COLOR);
 			}
 		}
+
 	}
 }
 
@@ -306,7 +272,6 @@ static void update_alien_block(alien_block_t* alien_block) {
 
 	if (abs(alien_block->pos.x - prev_block.pos.x) <= ALIEN_X_SHIFT
 			&& (alien_block->pos.y == prev_block.pos.y)) {
-
 
 		//Call update on each row
 		update_alien_row(
@@ -375,35 +340,55 @@ static void update_alien_block(alien_block_t* alien_block) {
 				u16 alien_x = 0;
 				for (alien_x = 0; alien_x < GAME_ALIEN_COLS; alien_x++, lx
 						+=GAME_ALIEN_SEPX) {
-					if (check(alien_block->alien_status[alien_row],alien_x)) {
-						update_bmp_row(x + lx, y + rowy + row, old_brow,
-								new_brow, ALIEN_COLOR);
+					u32 new;
+					u32 old;
+					if (alien_block->row_col.x == alien_x
+							&& alien_block->row_col.y == alien_row) {
+
+						new = (rowp < 0) ? (0)
+								: (bmp_alien_explosion_12x10[rowp]);
+						old = old_brow;
+
+					} else if (!check(alien_block->alien_status[alien_row],alien_x)) { //Only draw alien if not dead
+						new = 0;
+						old = new = (rowp < 0) ? (0)
+								: (bmp_alien_explosion_12x10[rowp]);
+					} else {
+						new = new_brow;
+						old = old_brow;
 					}
+
+					update_bmp_row(x + lx, y + rowy + row, old, new,
+							ALIEN_COLOR);
+
 				}
 			}
 		}
 
-	} else if (alien_block->pos.x == prev_block.pos.x && alien_block->pos.y
-			== prev_block.pos.y) {
-		//blocks are the same
-		u16 i;
-		for (i = 0; i < ALIENS_ROW_COUNT; i++) {
-			//Assuming aliens only die and do not resurrect
-			//If there is a change, then something died
-			u16 bit = prev_block.alien_status[i] ^ alien_block->alien_status[i];
-			u16 n = 0;
-			if (bit) {
-				while (bit >>= 1) { //Which bit is it?
-					n++;
-				}
-				//Draw over alien to delete
-				draw_bitmap(bmp_aliens[prev_block.legs][i], GAME_BACKGROUND,
-						prev_block.pos.x + n * GAME_ALIEN_SEPX,
-						alien_block->pos.y + i * GAME_ALIEN_SEPY, BMP_ALIEN_W,
-						BMP_ALIEN_H);
-			}
-		}
-	} else {
+	}
+
+	//	else if (alien_block->pos.x == prev_block.pos.x && alien_block->pos.y
+	//			== prev_block.pos.y) {
+	//		//blocks are the same
+	//		u16 i;
+	//		for (i = 0; i < ALIENS_ROW_COUNT; i++) {
+	//			//Assuming aliens only die and do not resurrect
+	//			//If there is a change, then something died
+	//			u16 bit = prev_block.alien_status[i] ^ alien_block->alien_status[i];
+	//			u16 n = 0;
+	//			if (bit) {
+	//				while (bit >>= 1) { //Which bit is it?
+	//					n++;
+	//				}
+	//				//Draw over alien to delete
+	//				draw_bitmap(bmp_alien_explosion_12x10, GAME_BACKGROUND,
+	//						prev_block.pos.x + n * GAME_ALIEN_SEPX,
+	//						alien_block->pos.y + i * GAME_ALIEN_SEPY, BMP_ALIEN_W,
+	//						BMP_ALIEN_H);
+	//			}
+	//		}
+	//	}
+	else {
 		const u32* bmp;
 		s16 x;
 		s16 y = prev_block.pos.y;
@@ -432,6 +417,7 @@ static void update_alien_block(alien_block_t* alien_block) {
 	memcpy(&prev_block, alien_block, sizeof(alien_block_t));
 }
 
+#define MAX_TANK_DISTANCE 2
 //Update tank position
 static void update_tank(tank_t* tank) {
 
@@ -441,17 +427,27 @@ static void update_tank(tank_t* tank) {
 	//	 the start location of the tank
 	const u32* old_bmp = bmp_tanks[prev_tank.state];
 	const u32* tank_bmp = bmp_tanks[tank->state]; //Get tank bitmap
+
 	u16 tank_y = tank->pos.y; //This doesnt change
 	u16 y; //This does, as we move down each pixel row in the tank
 	s16 offset = tank->pos.x - prev_tank.pos.x; //Shift distance
 
-	for (y = 0; y < BMP_TANK_H; y++) { //Iterate over pixel rows in tank
+	if (abs(offset) <= MAX_TANK_DISTANCE) {
 
-		u32 new = tank_bmp[y];
-		u32 prev = old_bmp[y];
-		new = (offset > 0) ? (new << offset) : (new >> -offset);
+		for (y = 0; y < BMP_TANK_H; y++) { //Iterate over pixel rows in tank
 
-		update_bmp_row(prev_tank.pos.x, y + tank_y, prev, new, COLOR_GREEN);
+			u32 new = tank_bmp[y];
+			u32 prev = old_bmp[y];
+			new = (offset > 0) ? (new << offset) : (new >> -offset);
+
+			update_bmp_row(prev_tank.pos.x, y + tank_y, prev, new, COLOR_GREEN);
+		}
+	} else {
+		draw_bitmap(old_bmp, GAME_BACKGROUND, prev_tank.pos.x, prev_tank.pos.y,
+				bmp_tank_dim.x, bmp_tank_dim.y);
+		draw_bitmap(tank_bmp, COLOR_GREEN, tank->pos.x, tank->pos.y,
+				bmp_tank_dim.x, bmp_tank_dim.y);
+
 	}
 	tank->changed = 0;
 	prev_tank.pos.x = tank->pos.x;
@@ -460,12 +456,51 @@ static void update_tank(tank_t* tank) {
 
 #define SAUCER_X 321
 #define SAUCER_Y 15
+#define HUNDRED 100
+#define ZERO 0
 //Update tank position
 static void update_saucer(saucer_t* saucer) {
 	//saucer is initially drawn in init, so prev_saucer can be initialized to
 	//	 the start location of the saucer
 
-	if (saucer->pos.x == prev_saucer.pos.x)
+	if (prev_saucer.alive && !saucer->alive) {
+
+		draw_bitmap(bmp_saucer_16x7, COLOR_BLACK, saucer->pos.x, saucer->pos.y,
+				BMP_SAUCER_W, BMP_SAUCER_H);
+		u16 hundred = 0;
+		if (saucer->points >= HUNDRED) {
+			hundred = saucer->points / HUNDRED;
+			draw_bitmap(bmp_numbers[hundred], COLOR_WHITE, saucer->pos.x,
+					saucer->pos.y, BMP_NUMBER_W, BMP_NUMBER_H);
+		}
+		u16 ten = (saucer->points - hundred * HUNDRED) / TEN;
+		draw_bitmap(bmp_numbers[ten], COLOR_WHITE, saucer->pos.x + SCORE_GAP_1,
+				saucer->pos.y, BMP_NUMBER_W, BMP_NUMBER_H);
+		draw_bitmap(bmp_numbers[ZERO], COLOR_WHITE,
+				saucer->pos.x + SCORE_GAP_2, saucer->pos.y, BMP_NUMBER_W,
+				BMP_NUMBER_H);
+		memcpy(&prev_saucer, saucer, sizeof(saucer_t));
+		return;
+	} else if (!prev_saucer.alive && saucer->alive) {
+
+		u16 hundred = 0;
+		if (prev_saucer.points >= HUNDRED) {
+			hundred = prev_saucer.points / HUNDRED;
+			draw_bitmap(bmp_numbers[hundred], COLOR_BLACK, prev_saucer.pos.x,
+					prev_saucer.pos.y, BMP_NUMBER_W, BMP_NUMBER_H);
+		}
+		u16 ten = (prev_saucer.points - hundred * HUNDRED) / TEN;
+		draw_bitmap(bmp_numbers[ten], COLOR_BLACK,
+				prev_saucer.pos.x + SCORE_GAP_1, prev_saucer.pos.y,
+				BMP_NUMBER_W, BMP_NUMBER_H);
+		draw_bitmap(bmp_numbers[ZERO], COLOR_BLACK,
+				prev_saucer.pos.x + SCORE_GAP_2, prev_saucer.pos.y,
+				BMP_NUMBER_W, BMP_NUMBER_H);
+
+		memcpy(&prev_saucer, saucer, sizeof(saucer_t));
+	}
+
+	if (saucer->pos.x == prev_saucer.pos.x || !saucer->alive)
 		return;
 	const u32* saucer_bmp = bmp_saucer_16x7; //Get saucer bitmap
 	u16 y = saucer->pos.y; //This doesnt change
@@ -688,15 +723,12 @@ static void update_missiles(tank_t * tank, alien_missiles_t* alien_missiles) {
 #define LIFE_INC 1
 void update_tank_life(u8 tank_lives) {
 
-
-	//xil_printf("TANK LIVES %d %d\r\n", tank_lives, prev_lives);
 	if (tank_lives == prev_lives)
 		return;
 	u16 life = prev_lives;
 	s16 delta = (tank_lives > prev_lives) ? (LIFE_INC) : (LIFE_DEC);
 	u16 offset; //create the offset for the tanks
 	for (; life != tank_lives; life += delta) {
-
 
 		//draw black
 		if (delta < 0) {
@@ -717,13 +749,13 @@ void render(tank_t* tank, alien_block_t* alienBlock,
 		alien_missiles_t* alien_missiles, bunker_t* bunkers, saucer_t* saucer,
 		u32 score) {
 
-	update_alien_block(alienBlock);
-	update_tank(tank);
 	update_missiles(tank, alien_missiles);
-	update_bunkers(bunkers);
-	update_saucer(saucer);
 	update_tank_life(tank->lives);
 	update_score(score);
+	update_bunkers(bunkers);
+	update_tank(tank);
+	update_saucer(saucer);
+	update_alien_block(alienBlock);
 }
 
 #define RES_SCALE 2

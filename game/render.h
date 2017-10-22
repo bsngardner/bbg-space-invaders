@@ -24,14 +24,7 @@ void render_init();
 void render(tank_t* tank, alien_block_t* alienBlock,
 		alien_missiles_t* alien_missiles, bunker_t* bunkers, saucer_t* saucer,
 		u32 score);
-
-void render_game_over(void);
-void render_explosion_1(u16 x, u16 y);
-void render_explosion_2(u16 x, u16 y);
-void render_explosion_3(u16 x, u16 y);
-void render_saucer_death(u16 x, u16 y);
-void render_saucer_points(u16 x, u16 y, u16 points, u8 on);
-void render_tank(void);
-void render_saucer(void);
+void render_gameover();
+void render_restart();
 
 #endif /* RENDER_H_ */

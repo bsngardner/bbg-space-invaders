@@ -13,6 +13,8 @@
 #include "render.h"
 #include "table.h"
 #include "gpio.h"
+#include "timing.h"
+#include "input.h"
 
 #define check(byte,bit) (byte & (table_bit[bit])) //checks to see if there is overlap in the alien bit table
 #define set(byte,bit) (byte |= (table_bit[bit])) //sets an alien in the bit table
@@ -20,6 +22,8 @@
 #define BULLET_POS -1 //initial bullet position
 #define MOVE_SPRITE 2 //increment at which sprites move
 #define TANK_MOVE_DIST 1
+#define MISSILE_MOVE_DIST 4
+#define BULLET_MOVE_DIST 2
 #define OFFSET_MAX 10 //max offset for deleting columns
 #define BIT_SHIFT 1
 
@@ -34,9 +38,7 @@
 
 //Prototypes
 void init_bunker_states(void); //function that sets the bunker states to max health
-void tank_state_switch(void); //state machine for tank movement and shooting
 void update_tank_lives(void);
-void kill_saucer(void);
 
 static bool collision_detect(point_t pos1, point_t dim1, point_t pos2,
 		point_t dim2);
@@ -65,8 +67,6 @@ u32 game_score = 0;
 //starts up the game and initializes the key components
 void control_init(void) {
 
-	srand(time(0)); //random seed
-
 	//initialize the bunker states to full health
 	init_bunker_states();
 
@@ -74,14 +74,22 @@ void control_init(void) {
 	for (i = 0; i < GAME_ALIEN_ROWS; i++) {
 		alien_block.alien_status[i] = ALIEN_ROW_ALIVE; //set all aliens to alive
 	}
+	for (i = 0; i < GAME_MISSILE_COUNT; i++) {
+		alien_missiles[i].active = 0;
+	}
 	alien_block.legs = OUT;
 	alien_block.loffset = 0;
 	alien_block.roffset = 0;
+	alien_block.row_col.x = GAME_INIT_ROW_COL;
+	alien_block.row_col.y = GAME_INIT_ROW_COL;
 	alien_block.pos.x = GAME_ALIEN_STARTX;
 	alien_block.pos.y = GAME_ALIEN_STARTY;
+	alien_block.alive = 1;
 
 	saucer.pos.x = GAME_SAUCER_STARTX;
 	saucer.pos.y = GAME_SAUCER_Y;
+	saucer.active = 0;
+	saucer.alive = 0;
 
 	tank.changed = 1;
 	tank.lives = GAME_LIFE_COUNT;
@@ -89,15 +97,24 @@ void control_init(void) {
 	tank.pos.y = GAME_TANK_STARTY;
 	tank.state = ALIVE;
 	tank.missile.active = 0;
-
+	game_score = 0;
 
 	//render(&tank, &alien_block, &alien_missiles, bunkers, &saucer, game_score); //render the sprites
 }
 
+#define ALIEN_DEATH_COUNT 20
 //function that blocks on the user input and goes to correct function handler
 void control_run(void) {
-
-	tank_state_switch();
+	static u16 alien_death_count = ALIEN_DEATH_COUNT;
+	if (alien_block.row_col.x != GAME_INIT_ROW_COL && alien_block.row_col.y
+			!= GAME_INIT_ROW_COL && !(--alien_death_count)) {
+		control_kill_alien(alien_block.row_col.y, alien_block.row_col.x);
+		alien_block.row_col.x = GAME_INIT_ROW_COL;
+		alien_block.row_col.y = GAME_INIT_ROW_COL;
+		//alien_block.changed = 1;
+		alien_death_count = ALIEN_DEATH_COUNT;
+	}
+	input_tank_controls();
 	render(&tank, &alien_block, &alien_missiles, bunkers, &saucer, game_score); //render after button press
 }
 
@@ -140,6 +157,54 @@ void control_tank_move(direction_t dir) {
 	}
 }
 
+void reset_tank() {
+	if (tank.lives) {
+		tank.pos.x = GAME_TANK_STARTX;
+		tank.pos.y = GAME_TANK_STARTY;
+		tank.state = ALIVE;
+		tank.missile.active = 0;
+	} else {
+		tank.state = EMPTY;
+		timing_set_gameover();
+	}
+
+}
+
+#define EXPLODE1_TIME 5
+#define EXPLODE2_TIME 5
+#define NEW_LIFE_WAIT 2
+void control_tank_explode() {
+	static u16 counter = 0;
+	static u16 new_life_timer = 0;
+	if (!counter) {
+		if (tank.state == EXPLODE1) {
+			counter = EXPLODE1_TIME;
+		} else if (tank.state == EXPLODE2) {
+			counter = EXPLODE2_TIME;
+		} else {
+			counter = 0;
+		}
+		return;
+	}
+
+	if (!(--counter)) {
+		if (tank.state == EXPLODE1) {
+			tank.state = EXPLODE2;
+			tank.changed = 1;
+			if (new_life_timer == 0) {
+				new_life_timer = NEW_LIFE_WAIT;
+			} else if (!(--new_life_timer)) {
+				counter = 0;
+				tank.changed = 1;
+				reset_tank();
+			}
+		} else if (tank.state == EXPLODE2) {
+			tank.state = EXPLODE1;
+			tank.changed = 1;
+		}
+	}
+}
+
 #define RIGHT_WALL (GAME_W - GAME_ALIEN_COLS*GAME_ALIEN_SEPX)
 //function that updates the alien block position
 void control_update_alien_position(void) {
@@ -176,12 +241,23 @@ void control_kill_alien(u16 alien_row, u16 alien_col) {
 	//remove the alien from the alien bit table
 	clear(alien_block.alien_status[alien_row],alien_col);
 
-
 	//takes all the row status bits and ORs them together to find offset
 	u16 mask = 0;
 	for (i = 0; i < GAME_ALIEN_ROWS; i++) {
 		mask |= alien_block.alien_status[i]; //OR together the statuses
 	}
+
+	alien_block.changed = 1;
+
+	if (mask == 0) {
+		alien_block.alive = 0;
+		alien_block.loffset = -1;
+		alien_block.roffset = -1;
+		timing_set_win();
+		tank.lives++;
+		return;
+	}
+
 	u16 maskp = mask; //init the mask
 	u8 n = OFFSET_MAX; //init the max offset
 
@@ -194,12 +270,18 @@ void control_kill_alien(u16 alien_row, u16 alien_col) {
 	while ((maskp = ((maskp << BIT_SHIFT) & ALIEN_ROW_ALIVE))) {//find the left offset
 		i--;
 	}
+
 	alien_block.loffset = i * GAME_ALIEN_SEPX; //calculate the left offset
 	alien_block.roffset = n * GAME_ALIEN_SEPX; //calculate the right offset
+
 	alien_block.changed = 1;
 }
 //function that fires the tank bullet
 void control_tank_fire(void) {
+	if (tank.state == EMPTY)
+		timing_restart_game();
+	if (tank.state != ALIVE)
+		return;
 	static u8 fired = 0;
 	//check to see if the tank bullet is already active
 	if (fired == 0) {
@@ -224,6 +306,8 @@ void control_alien_fire_missile(void) {
 	//used to identify the column of the shooter
 	u8 shooter_col;
 	//iterate over the missiles to check if they are active
+	if (!alien_block.alive)
+		return;
 	for (i = 0; i < CONTROL_MISSILES; i++) {
 		//if the next alien missile is not active
 		if (!alien_missiles[i].active) {
@@ -241,16 +325,20 @@ void control_alien_fire_missile(void) {
 	//flag to check if a missile was fired
 	u8 fired = 0;
 	//track the shooter's row
-	u8 shooter_row = GAME_ALIEN_ROWS;
+	s16 shooter_row;
 	//until a missile has been fired
 	while (!fired) {
+		shooter_row = GAME_ALIEN_ROWS - 1;
 		//pick a random column to shoot
 		shooter_col = rand() % GAME_ALIEN_COLS;
 		//check to see if the shooter is in the bottom row
-		while (!check(alien_block.alien_status[shooter_row],shooter_col))
+		while ((shooter_row >= 0)
+				&& !check(alien_block.alien_status[shooter_row],shooter_col)) {
 			shooter_row--;
+		}
+
 		//if the shooter was in the bottom row
-		if (shooter_row != 0) {
+		if (shooter_row >= 0) {
 			//show that a missile was fired
 			fired = 1;
 		}
@@ -262,7 +350,6 @@ void control_alien_fire_missile(void) {
 	alien_missiles[i].pos.y = alien_block.pos.y + (shooter_row + 1)
 			* GAME_ALIEN_SEPY - ALIEN_MID;
 
-
 	//about once every 4 shots shoot a strong alien missile
 	if (rand() % CONTROL_MISSILES == 0)
 		//set the alien missile type to strong
@@ -270,21 +357,31 @@ void control_alien_fire_missile(void) {
 	else
 		//else set the alien missile type to normal
 		alien_missiles[i].type = NORMAL;
-	alien_missiles[i].type = GUISE_0;
+	alien_missiles[i].guise = GUISE_0;
 }
 
 #define RES_SCALE 2
 #define OFFLIMITS 10
+#define MIN_SCORE 50
+#define INCREMENT 9
+#define POINTS_ROW0	40
+#define POINTS_ROW1	20
+#define POINTS_ROW2	20
+#define POINTS_ROW3	10
+#define POINTS_ROW4	10
 //function that updates the position of all bullets, both alien and tank
 void control_update_bullet(void) {
+	static const u16 point_values[GAME_ALIEN_ROWS] = { POINTS_ROW0,
+			POINTS_ROW1, POINTS_ROW2, POINTS_ROW3, POINTS_ROW4 };
 	//if there is already an active tank bullet
 	if (tank.missile.active) {
 		//update its y position by 2 pixels
-		tank.missile.pos.y = tank.missile.pos.y - MOVE_SPRITE;
+		tank.missile.pos.y = tank.missile.pos.y - BULLET_MOVE_DIST;
 		//if the tank bullet leaves the screen
 		if (tank.missile.pos.y < OFFLIMITS) {
 			//allow for another active bullet
 			tank.missile.active = 0;
+			return;
 		}
 		u16 bunker_num;
 		u16 block_num;
@@ -301,16 +398,18 @@ void control_update_bullet(void) {
 		u16 alien_col;
 		if (detect_alien_collision(&alien_row, &alien_col, tank.missile.pos,
 				bmp_missile_dim, bmp_bullet_straight_3x5)) {
-			control_kill_alien(alien_row, alien_col);
+			alien_block.row_col.x = alien_col;
+			alien_block.row_col.y = alien_row;
 			tank.missile.active = 0;
+			game_score += point_values[alien_row];
 		}
 
 		if (detect_saucer_collision(tank.missile.pos, bmp_missile_dim,
 				bmp_bullet_straight_3x5)) {
 			tank.missile.active = 0;
-			saucer.active = 0;
-			//control_saucer_explode();
 
+			game_score += saucer.points;
+			saucer.alive = 0;
 		}
 
 	}
@@ -323,7 +422,8 @@ void control_update_missiles(void) {
 		//check whether the alien missile is active
 		if (alien_missiles[i].active) {
 			//move the alien missile position up by 2 pixels
-			alien_missiles[i].pos.y = alien_missiles[i].pos.y + MOVE_SPRITE;
+			alien_missiles[i].pos.y = alien_missiles[i].pos.y
+					+ MISSILE_MOVE_DIST;
 			//check the guise of the alien missile
 			if (alien_missiles[i].guise == GUISE_1)
 				//alternate the guise every movement
@@ -361,42 +461,54 @@ void control_update_missiles(void) {
 }
 
 #define SAUCER_WIDTH 20
-#define NEG_SAUCER_WIDTH -20 //saucer can go off screen
+#define NEG_SAUCER_WIDTH -21 //saucer can go off screen
+#define SAUCER_PAUSE 100
+
 //
 void control_saucer_move(void) {
 	static direction_t saucer_dir = LEFT; //start the saucer going left
+	static u16 saucer_pause = 0;
+
+	//	xil_printf("saucer %d,%d active: %d alive: %d\n\r", saucer.pos.x,
+	//			saucer.pos.y, saucer.active, saucer.alive);
+
+	if (saucer_pause) {
+		--saucer_pause;
+		saucer.alive = 1;
+		return;
+	}
+	if (saucer.alive == 0) {
+		saucer_pause = SAUCER_PAUSE;
+		saucer.points = 0;
+		saucer_dir = LEFT;
+		saucer.pos.x = GAME_SAUCER_STARTX;
+		saucer.pos.y = GAME_SAUCER_Y;
+		saucer.points = ((rand() % INCREMENT) * MIN_SCORE + MIN_SCORE);
+		return;
+	}
+
 	if (saucer_dir == LEFT) { //if the saucer is moving left
-		if (saucer.pos.x > NEG_SAUCER_WIDTH) //move as long as not off screen
+		if (saucer.pos.x > NEG_SAUCER_WIDTH * 2) //move as long as not off screen
 			saucer.pos.x -= MOVE_SPRITE; //decrement x position
 		else {
-			saucer.active = 0; //if off screen then deactivate
 			saucer_dir = RIGHT; //change saucer direction
 		}
 	} else if (saucer_dir == RIGHT) { //if the saucer is moving right
-		if (saucer.pos.x < GAME_W + SAUCER_WIDTH) //move until off the screen
+		if (saucer.pos.x < GAME_W + SAUCER_WIDTH * 2) //move until off the screen
 			saucer.pos.x += MOVE_SPRITE; //increment position
 		else {
-			saucer.active = 0; //deactivate
 			saucer_dir = LEFT; //change saucer direction
 		}
 	}
 }
 
-//return the saucer state
-u8 control_saucer_state(void) {
-	return saucer.active;
-}
-//change the saucer state
-void control_saucer_state_toggle(void) {
-	saucer.active = !(saucer.active);
-
-}
-
 void update_tank_lives(void) {
 
-	tank.state = EXPLODE1;
-	tank.changed = 1;
-	tank.lives--;
+	if (tank.state == ALIVE) {
+		tank.state = EXPLODE1;
+		tank.changed = 1;
+		tank.lives--;
+	}
 
 }
 
@@ -405,6 +517,7 @@ static bool detect_saucer_collision(point_t pos, point_t dim, const u32* bmp) {
 			bmp_saucer_dim, 0))
 		return true;
 	return false;
+	//
 }
 
 static bool detect_tank_collision(point_t pos, point_t dim, const u32* bmp) {
@@ -413,6 +526,7 @@ static bool detect_tank_collision(point_t pos, point_t dim, const u32* bmp) {
 		return true;
 	}
 	return false;
+	//
 }
 
 static bool detect_alien_collision(u16* alien_row, u16* alien_col, point_t pos,

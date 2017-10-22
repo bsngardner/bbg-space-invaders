@@ -19,8 +19,8 @@
 #define GAME_BACKGROUND COLOR_BLACK
 //
 //Alien defines
-#define GAME_ALIEN_STARTX (GAME_W/8)
-#define GAME_ALIEN_STARTY (GAME_H/8)
+#define GAME_ALIEN_STARTX (GAME_W/10)
+#define GAME_ALIEN_STARTY (GAME_H/6)
 #define GAME_ALIEN_SEPX (BMP_ALIEN_W)	//Horizontal separation between aliens
 #define GAME_ALIEN_SEPY (BMP_ALIEN_W-2)	//Separation between aliens vertically
 #define GAME_ALIEN_DROP 2
@@ -28,10 +28,11 @@
 #define GAME_ALIEN_COLS 11
 #define GAME_ALIEN_DIR RIGHT
 #define GAME_MISSILE_COUNT 4
+#define GAME_INIT_ROW_COL -1
 
 //Saucer defines
-#define GAME_SAUCER_STARTX 321
-#define GAME_SAUCER_Y 15
+#define GAME_SAUCER_STARTX 400
+#define GAME_SAUCER_Y 20
 
 //Bunker defines
 #define GAME_BUNKER_COUNT 4 //number of bunkers
@@ -44,7 +45,7 @@
 
 //Tank defines
 #define GAME_TANK_STARTX (GAME_W/2 - BMP_TANK_W/2)
-#define GAME_TANK_STARTY (GAME_H*6/7)
+#define GAME_TANK_STARTY (GAME_H*5/6)
 #define GAME_LIFE_COUNT 3
 
 //
@@ -74,6 +75,8 @@ typedef struct {
 typedef struct {
 	point_t pos;
 	u8 active;
+	u8 alive;
+	u16 points;
 } saucer_t;
 
 //Alien missile type
@@ -92,10 +95,12 @@ typedef struct {
 //Alien block
 typedef struct alien_block {
 	point_t pos;
-	s8 loffset;
-	s8 roffset;
+	u8 loffset;
+	u8 roffset;
 	s8 changed;
+	s8 alive;
 	u16 alien_status[GAME_ALIEN_ROWS];
+	point_t row_col;
 	enum {
 		OUT = 0, IN = 1
 	} legs;

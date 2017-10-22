@@ -23,6 +23,7 @@
 #define BMP_MID BMP_TANK_W/2
 
 #define BMP_ALIEN_H 8
+#define BMP_ALIEN_EXPLODE_H 10
 #define BMP_ALIEN_W 16
 
 #define BMP_BUNKER_MAX 4
