@@ -16,6 +16,7 @@
 //state machine for tank movement and shooting
 void input_tank_controls(void) {
 
+    //Check if any butotn is pressed. Do appropriate action
 	if (button_state & SHOOT_BTN) {
 		control_tank_fire();
 	}

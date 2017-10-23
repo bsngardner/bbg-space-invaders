@@ -520,6 +520,7 @@ static bool detect_saucer_collision(point_t pos, point_t dim, const u32* bmp) {
 	//
 }
 
+//Returns whether the given bitmap with position pos and dimensions dim intersects with the tank
 static bool detect_tank_collision(point_t pos, point_t dim, const u32* bmp) {
 	if (collision_detect_bmp(bmp, pos, dim, bmp_tank_15x8, tank.pos,
 			bmp_tank_dim, 0)) {
@@ -529,14 +530,20 @@ static bool detect_tank_collision(point_t pos, point_t dim, const u32* bmp) {
 	//
 }
 
+//Returns whether or not the given bitmap with position pos and dimensions dim intersects with an alien
+//  if true, stores in alien_row and alien_col the position of the intersected alien
 static bool detect_alien_collision(u16* alien_row, u16* alien_col, point_t pos,
 		point_t dim, const u32* bmp) {
 	point_t alien_dim;
 	alien_dim.x = GAME_ALIEN_COLS * GAME_ALIEN_SEPX;
 	alien_dim.y = GAME_ALIEN_ROWS * GAME_ALIEN_SEPY;
-	if (!collision_detect(pos, dim, alien_block.pos, alien_dim))
+    //First check if there is a collision with the whole block of aliens
+    //  for efficiency
+	if (!collision_detect(pos, dim, alien_block.pos, alien_dim)) 
 		return false;
 
+    //Calculate which alien is intersected using relative positions
+    //  TODO fix for overlapping 2 aliens?
 	point_t rel_pos;
 	rel_pos.x = abs(pos.x - alien_block.pos.x);
 	rel_pos.y = abs(pos.y - alien_block.pos.y);
@@ -560,6 +567,8 @@ static bool detect_alien_collision(u16* alien_row, u16* alien_col, point_t pos,
 	return false;
 }
 
+//Returns true if bitmap with given position and dimensions intersects with a bunker. If true, 
+//  returns in bunker_num and block_num which bunker and which block was intersected
 static bool detect_bunker_collision(u16* bunker_num, u16* block_num,
 		point_t projectile_pos, const u32* bmp) {
 
@@ -592,12 +601,14 @@ static bool detect_bunker_collision(u16* bunker_num, u16* block_num,
 			}
 
 		}
+		//Next bunker position x
 		bunker_pos.x += GAME_BUNKER_SEP;
 	}
 
 	return false;
 }
 
+//Detect if two bitmap hitboxes overlap
 static bool collision_detect(point_t pos1, point_t dim1, point_t pos2,
 		point_t dim2) {
 
@@ -620,6 +631,8 @@ static bool collision_detect(point_t pos1, point_t dim1, point_t pos2,
 	return true;
 }
 
+//Overlays two overlapping bitaps and checks if their set bits overlap. If so, returns true.
+//  Provides pixel-resolution collision detection
 static bool collision_detect_bmp(const u32* bmp1, point_t pos1, point_t dim1,
 		const u32* bmp2, point_t pos2, point_t dim2, const u32* bmp_mask) {
 	if (!collision_detect(pos1, dim1, pos2, dim2))

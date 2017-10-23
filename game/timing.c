@@ -43,7 +43,6 @@ void timing_game_tick() {
 		srand(time(0)); //random seed
 		control_init(); //initialize the game
 		render_init();
-		print("init complete\n\r");
 		state = RUNNING;
 		break;
 	case RUNNING:

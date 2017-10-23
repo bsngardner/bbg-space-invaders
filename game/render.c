@@ -366,28 +366,29 @@ static void update_alien_block(alien_block_t* alien_block) {
 		}
 
 	}
-
-	//	else if (alien_block->pos.x == prev_block.pos.x && alien_block->pos.y
-	//			== prev_block.pos.y) {
-	//		//blocks are the same
-	//		u16 i;
-	//		for (i = 0; i < ALIENS_ROW_COUNT; i++) {
-	//			//Assuming aliens only die and do not resurrect
-	//			//If there is a change, then something died
-	//			u16 bit = prev_block.alien_status[i] ^ alien_block->alien_status[i];
-	//			u16 n = 0;
-	//			if (bit) {
-	//				while (bit >>= 1) { //Which bit is it?
-	//					n++;
-	//				}
-	//				//Draw over alien to delete
-	//				draw_bitmap(bmp_alien_explosion_12x10, GAME_BACKGROUND,
-	//						prev_block.pos.x + n * GAME_ALIEN_SEPX,
-	//						alien_block->pos.y + i * GAME_ALIEN_SEPY, BMP_ALIEN_W,
-	//						BMP_ALIEN_H);
-	//			}
-	//		}
-	//	}
+// If block hasnt moved, just check for killed aliens
+    else if (alien_block->pos.x == prev_block.pos.x && alien_block->pos.y
+			== prev_block.pos.y) {
+			//blocks are the same
+		u16 i;
+		for (i = 0; i < ALIENS_ROW_COUNT; i++) {
+			//Assuming aliens only die and do not resurrect
+			//If there is a change, then something died
+			u16 bit = prev_block.alien_status[i] ^ alien_block->alien_status[i];
+			u16 n = 0;
+			if (bit) {
+				while (bit >>= 1) { //Which bit is it?
+					n++;
+				}
+					//Draw over alien to delete
+				draw_bitmap(bmp_alien_explosion_12x10, GAME_BACKGROUND,
+						prev_block.pos.x + n * GAME_ALIEN_SEPX,
+						alien_block->pos.y + i * GAME_ALIEN_SEPY, BMP_ALIEN_W,
+						BMP_ALIEN_H);
+			}
+        }
+    }
+    //If the block is moving too far or in both x and y directions, do a full erase and write
 	else {
 		const u32* bmp;
 		s16 x;
@@ -556,8 +557,9 @@ void update_bmp_row(s16 x, s16 y, u32 old, u32 new, u32 color) {
 			clr_point (lx, y);
 		}
 
-		reset_delta >>= 1;
-		set_delta >>= 1;
+#define SHIFT1 1
+		reset_delta >>= SHIFT1;    
+		set_delta >>= SHIFT1;
 		lx++;
 	}
 }
@@ -647,8 +649,8 @@ static void update_missiles(tank_t * tank, alien_missiles_t* alien_missiles) {
 				new_bmp = bmp_alien_missiles[missile->type][missile->guise];
 			else
 				new_bmp = bmp_empty_projectile;
-			s16 row;
-			s16 rowp;
+			s16 row; //from 0 to bmp height + dy. When less than bmp_height, is row index for non shifted bitmap
+			s16 rowp; //from -dy to bmp_height + dy. When positive, is bitmap row index for shifted bitmap
 			for (row = 0, rowp = -dy; row < BMP_BULLET_H + dy; row++, rowp++) {
 				u32 old_brow;
 				u32 new_brow;
@@ -665,6 +667,7 @@ static void update_missiles(tank_t * tank, alien_missiles_t* alien_missiles) {
 
 				update_bmp_row(x, y + row, old_brow, new_brow, COLOR_WHITE);
 			}
+			//update prev state to current state
 			prev_missile->guise = missile->guise;
 			prev_missile->pos.xy = missile->pos.xy;
 			prev_missile->active = missile->active;
@@ -692,8 +695,8 @@ static void update_missiles(tank_t * tank, alien_missiles_t* alien_missiles) {
 			new_bmp = bmp_bullet_straight_3x5;
 		else
 			new_bmp = bmp_empty_projectile;
-		s16 row;
-		s16 rowp;
+		s16 row; //Same as above but in the reverse direction. row is index for shifted bitmap (shifted up) 
+		s16 rowp; //while rowp is index for unshifted bitmap (old)
 		for (row = 0, rowp = -dy; row < BMP_BULLET_H + dy; row++, rowp++) {
 			u32 old_brow;
 			u32 new_brow;
@@ -713,7 +716,7 @@ static void update_missiles(tank_t * tank, alien_missiles_t* alien_missiles) {
 		}
 		prev_tank.missile.pos.xy = tank->missile.pos.xy;
 		prev_tank.missile.active = tank->missile.active;
-	} while (false);
+	} while (false);//do{}while(0); is to allow breaking out
 	return;
 }
 
