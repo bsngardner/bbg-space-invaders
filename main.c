@@ -21,6 +21,7 @@
 
 #include "gpio.h"
 #include "timer.h"
+#include "audio.h"
 #include "render.h"
 #include "control.h"
 #include "timing.h"
@@ -71,15 +72,18 @@ int main() {
 
 		if (!(--i)) {
 			avg_util = (avg_util - (avg_util >> 2)) + (max_util >> 2);
-			xil_printf("utilization: %d, %d\n\r", avg_util, max_util);
-			i = 10;
+			//xil_printf("utilization: %d, %d\n\r", avg_util, max_util);
+			i = 100;
 			max_util = -1;
+			audio_play_sound(0);
 		}
 
 #endif
 
 		//Tick state machines
+#if 0
 		timing_game_tick();
+#endif
 		//		game_controller_run(); //run the game
 	}
 
@@ -93,19 +97,18 @@ void init() {
 	init_platform(); // Necessary for all programs.
 
 	gpio_init();
+	audio_init();
 	interrupt_init();
 
 	microblaze_enable_interrupts();
 
 }
 
+#define ENABLED_INTERRUPTS (XPAR_FIT_TIMER_0_INTERRUPT_MASK | XPAR_PUSH_BUTTONS_5BITS_IP2INTC_IRPT_MASK | XPAR_AXI_AC97_0_INTERRUPT_MASK)
 void interrupt_init() {
 
 	microblaze_register_handler(interrupt_handler_dispatcher, NULL);
-	XIntc_EnableIntr(
-			XPAR_INTC_0_BASEADDR,
-			(XPAR_FIT_TIMER_0_INTERRUPT_MASK
-					| XPAR_PUSH_BUTTONS_5BITS_IP2INTC_IRPT_MASK));
+	XIntc_EnableIntr(XPAR_INTC_0_BASEADDR,ENABLED_INTERRUPTS);
 	XIntc_MasterEnable(XPAR_INTC_0_BASEADDR);
 }
 
@@ -113,6 +116,11 @@ void interrupt_handler_dispatcher(void* ptr) {
 	XIntc_MasterDisable(XPAR_AXI_INTC_0_BASEADDR);
 
 	int intc_status = XIntc_GetIntrStatus(XPAR_INTC_0_BASEADDR);
+
+	if (intc_status & XPAR_AXI_AC97_0_INTERRUPT_MASK) {
+		audio_interrupt_handler();
+		XIntc_AckIntr(XPAR_INTC_0_BASEADDR, XPAR_AXI_AC97_0_INTERRUPT_MASK);
+	}
 	// Check the FIT interrupt first.
 	if (intc_status & XPAR_FIT_TIMER_0_INTERRUPT_MASK) {
 		XIntc_AckIntr(XPAR_INTC_0_BASEADDR, XPAR_FIT_TIMER_0_INTERRUPT_MASK);
